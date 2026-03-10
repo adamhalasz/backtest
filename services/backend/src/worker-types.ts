@@ -20,6 +20,7 @@ export interface BackendEnv {
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL?: string;
   FRONTEND_ORIGIN?: string;
+  ADMIN_ORIGIN?: string;
   INGESTION_ADMIN_SECRET?: string;
   // Default admin user (development/demo only)
   ENABLE_DEFAULT_ADMIN_SEED?: string;

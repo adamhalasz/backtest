@@ -28,6 +28,16 @@ Configure the following secrets in your GitHub repository (Settings → Secrets 
 | `CLICKHOUSE_PASSWORD` | ClickHouse password | `your-password` |
 | `VITE_API_URL` | Production API URL for frontend | `https://api.backtest.yourdomain.com` |
 
+### Required Backend Runtime Configuration
+
+The backend must trust the deployed frontend and admin origins. Set these values in the Worker configuration for production:
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `BETTER_AUTH_URL` | Public backend auth/API origin | `https://api.backtest.yourdomain.com` |
+| `FRONTEND_ORIGIN` | Main frontend origin | `https://backtest.yourdomain.com` |
+| `ADMIN_ORIGIN` | Admin frontend origin | `https://admin.yourdomain.com` |
+
 ### How to Get Cloudflare Credentials
 
 1. **API Token**:
@@ -170,12 +180,10 @@ Set production environment variables:
 ```bash
 cd services/backend
 
-# Set vars (non-secret)
-npx wrangler secret put BETTER_AUTH_URL
-# Enter: https://api.yourdomain.com
-
-npx wrangler secret put FRONTEND_ORIGIN
-# Enter: https://backtest.yourdomain.com
+# Update vars (non-secret) in wrangler.jsonc or your production deploy config:
+# BETTER_AUTH_URL=https://api.yourdomain.com
+# FRONTEND_ORIGIN=https://backtest.yourdomain.com
+# ADMIN_ORIGIN=https://admin.yourdomain.com
 
 # Set secrets
 npx wrangler secret put DATABASE_URL

@@ -59,6 +59,12 @@ Name: VITE_API_URL
 Value: https://api.backtest.yourdomain.com
 ```
 
+The backend deployment must also use non-secret runtime variables for:
+
+- `BETTER_AUTH_URL`
+- `FRONTEND_ORIGIN`
+- `ADMIN_ORIGIN`
+
 ## Verification
 
 After adding all secrets, they should appear in your secrets list (values are hidden):

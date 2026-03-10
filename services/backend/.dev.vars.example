@@ -2,6 +2,7 @@ DATABASE_URL=postgresql://username:password@host:5432/database
 BETTER_AUTH_SECRET=replace-with-a-random-32-byte-secret
 BETTER_AUTH_URL=http://localhost:8787
 FRONTEND_ORIGIN=http://localhost:5173
+ADMIN_ORIGIN=http://localhost:5174
 INGESTION_ADMIN_SECRET=replace-with-a-local-admin-secret
 ENABLE_DEFAULT_ADMIN_SEED=false
 # DEFAULT_ADMIN_EMAIL=admin@example.com

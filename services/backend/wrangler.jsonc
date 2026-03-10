@@ -34,6 +34,7 @@
     "vars": {
         "BETTER_AUTH_URL": "http://localhost:8787",
         "FRONTEND_ORIGIN": "http://localhost:5173",
+        "ADMIN_ORIGIN": "http://localhost:5174",
         "CLICKHOUSE_DB": "market_data",
         "CCXT_EXCHANGE": "binance",
         "CCXT_DELAY_MS": "1500",
