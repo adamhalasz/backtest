@@ -111,7 +111,6 @@ echo ""
 echo "Creating Pages projects if they don't exist..."
 echo ""
 
-cd services/frontend
 if ! npx wrangler pages project list 2>/dev/null | grep -q "backtest-frontend"; then
     echo "Creating frontend project..."
     npx wrangler pages project create backtest-frontend --production-branch main || true
@@ -119,15 +118,12 @@ else
     echo -e "${GREEN}✓ Frontend project exists${NC}"
 fi
 
-cd ../admin
 if ! npx wrangler pages project list 2>/dev/null | grep -q "backtest-admin"; then
     echo "Creating admin project..."
     npx wrangler pages project create backtest-admin --production-branch main || true
 else
     echo -e "${GREEN}✓ Admin project exists${NC}"
 fi
-
-cd ../..
 
 # Set backend secrets
 echo ""
@@ -179,22 +175,8 @@ read -p "Deploy to production now? (y/N) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo ""
-    echo "Deploying backend worker..."
-    cd services/backend
-    npx wrangler deploy
-    cd ../..
-    
-    echo ""
-    echo "Deploying frontend..."
-    cd services/frontend
-    npx wrangler pages deploy dist --project-name=backtest-frontend
-    cd ../..
-    
-    echo ""
-    echo "Deploying admin..."
-    cd services/admin
-    npx wrangler pages deploy dist --project-name=backtest-admin
-    cd ../..
+    echo "Deploying all services..."
+    pnpm run deploy:all
     
     echo ""
     echo -e "${GREEN}✨ Deployment complete!${NC}"
@@ -218,7 +200,7 @@ echo ""
 echo -e "${GREEN}✅ Setup complete!${NC}"
 echo ""
 echo "📚 Documentation:"
-echo "  - Deployment guide: .github/DEPLOYMENT.md"
-echo "  - GitHub secrets: .github/SECRETS.md"
+echo "  - Deployment guide: docs/DEPLOYMENT.md"
+echo "  - GitHub secrets: docs/SECRETS.md"
 echo "  - Infrastructure: infra/README.md"
 echo ""

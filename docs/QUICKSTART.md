@@ -69,9 +69,14 @@ cd ../..
 pnpm run deploy:all
 ```
 
+This will execute deployment scripts located in `scripts/` directory:
+- `deploy-backend.sh` - Deploys the Worker API
+- `deploy-frontend.sh` - Builds and deploys the frontend to Pages
+- `deploy-admin.sh` - Builds and deploys the admin dashboard to Pages
+
 ### Option 3: GitHub Actions (Recommended for CI/CD)
 
-1. Set GitHub Secrets (see `.github/SECRETS.md`)
+1. Set GitHub Secrets (see [docs/SECRETS.md](SECRETS.md))
 2. Push to `main` branch
 3. GitHub Actions will automatically deploy
 
@@ -161,10 +166,10 @@ VALUES (
 
 ## 📚 Documentation
 
-- **Deployment Guide**: `.github/DEPLOYMENT.md`
-- **GitHub Secrets**: `.github/SECRETS.md`
-- **Infrastructure**: `infra/README.md`
-- **Root README**: `README.md`
+- **Deployment Guide**: [docs/DEPLOYMENT.md](DEPLOYMENT.md)
+- **GitHub Secrets**: [docs/SECRETS.md](SECRETS.md)
+- **Infrastructure**: [infra/README.md](../infra/README.md)
+- **Root README**: [README.md](../README.md)
 
 ## 💡 Quick Commands
 

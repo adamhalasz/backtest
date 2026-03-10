@@ -3,18 +3,21 @@ import { createAuth } from './auth-config';
 import { getAuthBaseUrl } from './auth-env';
 import type { AppEnv, BackendEnv } from '../worker-types';
 
-const DEFAULT_USER = {
-  email: 'adamfsh@gmail.com',
-  password: '123123',
-  name: 'Adam Fsh',
-  role: 'admin',
-} as const;
+// Default user for development/demo environments
+// Override these with environment variables: DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, DEFAULT_ADMIN_NAME
+const getDefaultUser = (env: BackendEnv) => ({
+  email: env.DEFAULT_ADMIN_EMAIL || 'admin@example.com',
+  password: env.DEFAULT_ADMIN_PASSWORD || 'changeme',
+  name: env.DEFAULT_ADMIN_NAME || 'Admin User',
+  role: 'admin' as const,
+});
 
 const seedRuns = new Map<string, Promise<void>>();
 
 const getSeedKey = (env: BackendEnv) => `${env.DATABASE_URL}:${getAuthBaseUrl(env)}`;
 
 const createDefaultUser = async (env: BackendEnv) => {
+  const DEFAULT_USER = getDefaultUser(env);
   const auth = createAuth(env);
   const context = await auth.$context;
   const existingUser = await context.internalAdapter.findUserByEmail(DEFAULT_USER.email);

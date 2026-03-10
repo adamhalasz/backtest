@@ -16,7 +16,7 @@ Use this checklist before and during deployment.
 
 ### Database Setup
 - [ ] Production PostgreSQL database created (Neon)
-- [ ] Database migrations executed (see SETUP_COMPLETE.md)
+- [ ] Database migrations executed
 - [ ] Database connection string ready
 - [ ] Admin user will be created after deployment
 
@@ -74,7 +74,7 @@ Set these with `cd services/backend && wrangler secret put SECRET_NAME`:
 Or use the convenience script: `pnpm run deploy:all`
 
 ### Option 3: GitHub Actions
-- [ ] Set all GitHub secrets (see `.github/SECRETS.md`)
+- [ ] Set all GitHub secrets (see [docs/SECRETS.md](SECRETS.md))
 - [ ] Push to main branch
 - [ ] Monitor GitHub Actions workflow
 - [ ] Verify deployment succeeded

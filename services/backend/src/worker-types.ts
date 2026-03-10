@@ -21,6 +21,10 @@ export interface BackendEnv {
   BETTER_AUTH_URL?: string;
   FRONTEND_ORIGIN?: string;
   INGESTION_ADMIN_SECRET?: string;
+  // Default admin user (development/demo only)
+  DEFAULT_ADMIN_EMAIL?: string;
+  DEFAULT_ADMIN_PASSWORD?: string;
+  DEFAULT_ADMIN_NAME?: string;
   CLICKHOUSE_URL?: string;
   CLICKHOUSE_USERNAME?: string;
   CLICKHOUSE_PASSWORD?: string;

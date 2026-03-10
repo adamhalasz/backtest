@@ -5,13 +5,18 @@ Admin dashboard for the backtest platform. Provides admin-only access to:
 - Realtime ingestion monitoring
 - System administration
 
-## Admin Credentials
-
-Default admin user:
-- Email: `adamfsh@gmail.com`
-- Password: `123123`
+## Admin Access
 
 Only users with the `admin` role can access this service.
+
+### Setting Up an Admin User
+
+In development, a default admin user is auto-created (see backend `DEFAULT_ADMIN_EMAIL` env var).
+
+In production, grant admin role via SQL:
+```sql
+UPDATE "user" SET role = 'admin' WHERE email = 'your-email@example.com';
+```
 
 ## Development
 
