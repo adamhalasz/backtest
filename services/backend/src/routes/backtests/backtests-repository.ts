@@ -1,6 +1,7 @@
 import { getSql } from '../../db/client';
+import type { BacktestRunResult, Trade } from '../../lib/backtest-engine/types';
 import type { BackendEnv } from '../../worker-types';
-import type { BacktestInsertInput, StoredBacktestRow, StoredTradeRow } from './backtests-types';
+import type { BacktestRequestInput, StoredBacktestRow, StoredTradeRow } from './backtests-types';
 
 export const listBacktestsByUser = async (env: BackendEnv, userId: string): Promise<StoredBacktestRow[]> => {
   const sql = getSql(env);
@@ -30,6 +31,21 @@ export const findBacktestById = async (
   return (rows[0] as StoredBacktestRow | undefined) ?? null;
 };
 
+export const findBacktestByIdForWorkflow = async (
+  env: BackendEnv,
+  backtestId: string,
+): Promise<StoredBacktestRow | null> => {
+  const sql = getSql(env);
+  const rows = await sql`
+    SELECT *
+    FROM backtest_results
+    WHERE id = ${backtestId}
+    LIMIT 1
+  `;
+
+  return (rows[0] as StoredBacktestRow | undefined) ?? null;
+};
+
 export const listTradesByBacktestId = async (
   env: BackendEnv,
   backtestId: string,
@@ -49,7 +65,7 @@ export const listTradesByBacktestId = async (
 export const insertBacktest = async (
   env: BackendEnv,
   userId: string,
-  payload: BacktestInsertInput,
+  payload: BacktestRequestInput,
 ): Promise<StoredBacktestRow> => {
   const sql = getSql(env);
   const insertedBacktests = await sql`
@@ -65,6 +81,7 @@ export const insertBacktest = async (
       win_rate,
       profit_factor,
       max_drawdown,
+      status,
       parameters
     ) VALUES (
       ${userId},
@@ -74,10 +91,11 @@ export const insertBacktest = async (
       ${payload.backtest.start_date},
       ${payload.backtest.end_date},
       ${payload.backtest.initial_balance},
-      ${payload.backtest.final_balance},
-      ${payload.backtest.win_rate},
-      ${payload.backtest.profit_factor},
-      ${payload.backtest.max_drawdown},
+      ${0},
+      ${0},
+      ${0},
+      ${0},
+      ${'pending'},
       ${JSON.stringify(payload.backtest.parameters)}::jsonb
     )
     RETURNING *
@@ -91,7 +109,7 @@ export const insertBacktestTrade = async (
   input: {
     backtestId: string;
     userId: string;
-    trade: BacktestInsertInput['trades'][number];
+    trade: Trade;
   },
 ): Promise<void> => {
   const sql = getSql(env);
@@ -120,5 +138,81 @@ export const insertBacktestTrade = async (
       ${JSON.stringify(input.trade.signals || {})}::jsonb,
       ${input.trade.reason || null}
     )
+  `;
+};
+
+export const updateBacktestWorkflowInstanceById = async (
+  env: BackendEnv,
+  backtestId: string,
+  workflowInstanceId: string,
+): Promise<StoredBacktestRow | null> => {
+  const sql = getSql(env);
+  const rows = await sql`
+    UPDATE backtest_results
+    SET workflow_instance_id = ${workflowInstanceId}, updated_at = NOW()
+    WHERE id = ${backtestId}
+    RETURNING *
+  `;
+
+  return (rows[0] as StoredBacktestRow | undefined) ?? null;
+};
+
+export const markBacktestRunningById = async (env: BackendEnv, backtestId: string): Promise<void> => {
+  const sql = getSql(env);
+  await sql`
+    UPDATE backtest_results
+    SET status = 'running', error_message = NULL, updated_at = NOW()
+    WHERE id = ${backtestId}
+  `;
+};
+
+export const markBacktestFailedById = async (
+  env: BackendEnv,
+  backtestId: string,
+  errorMessage: string,
+): Promise<void> => {
+  const sql = getSql(env);
+  await sql`
+    UPDATE backtest_results
+    SET status = 'failed', error_message = ${errorMessage}, updated_at = NOW()
+    WHERE id = ${backtestId}
+  `;
+};
+
+export const completeBacktestRunById = async (
+  env: BackendEnv,
+  backtestId: string,
+  result: BacktestRunResult,
+): Promise<void> => {
+  const sql = getSql(env);
+  const backtest = await findBacktestByIdForWorkflow(env, backtestId);
+
+  if (!backtest) {
+    return;
+  }
+
+  await sql`
+    DELETE FROM backtest_trades
+    WHERE backtest_id = ${backtestId}
+  `;
+
+  for (const trade of result.trades) {
+    await insertBacktestTrade(env, {
+      backtestId,
+      userId: backtest.user_id,
+      trade,
+    });
+  }
+
+  await sql`
+    UPDATE backtest_results
+    SET final_balance = ${result.finalBalance},
+        win_rate = ${result.metrics.winRate},
+        profit_factor = ${Number.isFinite(result.metrics.profitFactor) ? result.metrics.profitFactor : 0},
+        max_drawdown = ${result.metrics.maxDrawdown},
+        status = 'completed',
+        error_message = NULL,
+        updated_at = NOW()
+    WHERE id = ${backtestId}
   `;
 };

@@ -1,13 +1,14 @@
 import type { z } from 'zod';
-import type { backtestInsertSchema, tradeSchema } from './backtests-schema';
+import type { backtestRequestSchema } from './backtests-schema';
 
-export type TradeInput = z.infer<typeof tradeSchema>;
-export type BacktestInsertInput = z.infer<typeof backtestInsertSchema>;
+export type BacktestRequestInput = z.infer<typeof backtestRequestSchema>;
+export type BacktestStatus = 'pending' | 'running' | 'completed' | 'failed';
 
 export interface StoredBacktestRow {
   id: string;
   user_id: string;
   created_at: string;
+  updated_at?: string;
   symbol: string;
   exchange: string;
   strategy: string;
@@ -18,6 +19,9 @@ export interface StoredBacktestRow {
   win_rate: number;
   profit_factor: number | null;
   max_drawdown: number;
+  status: BacktestStatus;
+  workflow_instance_id: string | null;
+  error_message: string | null;
   parameters: Record<string, unknown> | string;
 }
 

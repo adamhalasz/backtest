@@ -1,3 +1,5 @@
+import type { MarketAssetClass, MarketDataProviderId } from '@/lib/market';
+
 export enum EntryFrequency {
   SCALPING = 'scalping',
   DAILY = 'daily',
@@ -42,6 +44,8 @@ export interface BacktestResult {
 
 export interface BacktestConfig {
   symbol: string;
+  assetClass?: MarketAssetClass;
+  provider?: MarketDataProviderId;
   exchange: string;
   strategy: string;
   timeframe: string;
@@ -80,6 +84,7 @@ export interface Candle {
 export interface StoredBacktest {
   id: string;
   created_at: string;
+  updated_at?: string;
   symbol: string;
   exchange: string;
   strategy: string;
@@ -90,9 +95,18 @@ export interface StoredBacktest {
   win_rate: number;
   profit_factor: number;
   max_drawdown: number;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  workflow_instance_id?: string | null;
+  error_message?: string | null;
   parameters: {
     takeProfitLevel: number;
     stopLossLevel: number;
+    assetClass?: MarketAssetClass;
+    provider?: MarketDataProviderId;
+    timeframe?: string;
+    entryFrequency?: EntryFrequency;
+    riskPerTrade?: number;
+    maxTradeTime?: number;
     rsiOverbought?: number;
     rsiOversold?: number;
     macdFastPeriod?: number;
@@ -156,6 +170,8 @@ export interface Bot {
   parameters: {
     entryFrequency: EntryFrequency;
     timeframe: string;
+    assetClass?: MarketAssetClass;
+    provider?: MarketDataProviderId;
     takeProfitLevel: number;
     stopLossLevel: number;
     rsiOverbought: number;

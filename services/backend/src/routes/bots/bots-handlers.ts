@@ -3,7 +3,7 @@ import { getRequiredUser } from '../../auth/auth-middleware';
 import { AppError } from '../../lib/errors';
 import type { AppEnv } from '../../worker-types';
 import { botSchema, statusSchema } from './bots-schema';
-import { createBot, deleteBot, getBots, updateBotStatus } from './bots-service';
+import { createBot, deleteBot, getBots, runBot, updateBotStatus } from './bots-service';
 
 const getBotId = (c: Context<AppEnv>) => {
   const botId = c.req.param('id' as never);
@@ -46,4 +46,9 @@ export const handleDeleteBot = async (c: Context<AppEnv>) => {
   const user = getRequiredUser(c.get('user'));
   await deleteBot(c.env, getBotId(c), user.id);
   return c.body(null, 204);
+};
+
+export const handleRunBot = async (c: Context<AppEnv>) => {
+  const user = getRequiredUser(c.get('user'));
+  return c.json(await runBot(c.env, getBotId(c), user.id));
 };

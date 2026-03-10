@@ -6,6 +6,7 @@ import { ArrowLeft, Play, Pause, StopCircle, Activity, Calendar } from 'lucide-r
 import moment from 'moment-timezone';
 import { DukascopyClient } from '@/lib/dukascopy';
 import { getBacktest, listBacktestTrades } from '@/lib/api-client';
+import { buildMarketDataRequestSymbol, resolveStoredAssetClass, resolveStoredProvider } from '@/lib/market';
 
 const CHART_TIMEFRAMES = [
   { value: '1m', label: '1M' },
@@ -55,6 +56,16 @@ export function BacktestTimelinePage() {
       try {
         if (!id) throw new Error('Backtest not found');
         const backtestData = await getBacktest(id);
+
+        if (backtestData.status !== 'completed') {
+          setBacktest(backtestData);
+          setTrades([]);
+          setError(backtestData.status === 'failed'
+            ? (backtestData.error_message || 'Backtest workflow failed')
+            : 'Backtest is still running in Cloudflare Workflows. Timeline will be available after completion.');
+          return;
+        }
+
         const tradesData = await listBacktestTrades(id);
 
         setBacktest(backtestData);
@@ -178,8 +189,9 @@ export function BacktestTimelinePage() {
       
       try {
         const dukascopyClient = DukascopyClient.getInstance();
-        const [baseCurrency, targetCurrency] = backtest.symbol.split('/');
-        const symbol = `${baseCurrency}${targetCurrency}`;
+        const assetClass = resolveStoredAssetClass(backtest.parameters, backtest.symbol);
+        const provider = resolveStoredProvider(backtest.parameters, backtest.symbol);
+        const symbol = buildMarketDataRequestSymbol(backtest.symbol, assetClass);
         
         const ticks = await dukascopyClient.getTicks(
           symbol,
@@ -188,7 +200,11 @@ export function BacktestTimelinePage() {
           timeframe,
           (progress) => {
             // Update progress if needed
-          }
+          },
+          {
+            assetClass,
+            provider,
+          },
         );
         
         // Group ticks into candles based on timeframe

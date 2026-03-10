@@ -1,10 +1,18 @@
-export interface DukascopyTick {
-  timestamp: string;
-  bid: number;
-  ask: number;
-  bidVolume: number;
-  askVolume: number;
+import { getMarketDataProvider } from './market-data-provider-registry';
+import { inferAssetClass } from './market-data-yahoo-provider';
+import type { DukascopyTick, MarketAssetClass, MarketDataProviderId, MarketCandle } from './market-data-types';
+import type { BackendEnv } from '../worker-types';
+
+interface CacheEntry {
+  expiresAt: number;
+  staleUntil: number;
+  ticks: DukascopyTick[];
 }
+
+const marketDataCache = new Map<string, CacheEntry>();
+const inflightMarketData = new Map<string, Promise<DukascopyTick[]>>();
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const STALE_TTL_MS = 60 * 60 * 1000;
 
 const timeframeToIncrement = (timeframe: string): number => {
   const minute = 60 * 1000;
@@ -35,32 +43,91 @@ const timeframeToIncrement = (timeframe: string): number => {
   }
 };
 
-export const generateTicks = (
+const buildCacheKey = (
+  symbol: string,
+  assetClass: MarketAssetClass,
+  provider: MarketDataProviderId,
   startTime: Date,
   endTime: Date,
   timeframe: string,
-): DukascopyTick[] => {
-  const ticks: DukascopyTick[] = [];
-  let currentTime = new Date(startTime);
-  let currentPrice = 1.15;
+) => {
+  return [provider, assetClass, symbol.toUpperCase(), timeframe, startTime.toISOString(), endTime.toISOString()].join(':');
+};
 
-  while (currentTime <= endTime) {
-    if (currentTime.getDay() !== 0 && currentTime.getDay() !== 6) {
-      const noise = (Math.random() - 0.5) * 0.0002;
-      currentPrice *= 1 + noise;
-      const spread = 0.0001 + Math.random() * 0.0001;
+const candlesToTicks = (candles: MarketCandle[], timeframe: string): DukascopyTick[] => {
+  const increment = timeframeToIncrement(timeframe);
 
-      ticks.push({
-        timestamp: currentTime.toISOString(),
-        bid: currentPrice,
-        ask: currentPrice + spread,
-        bidVolume: Math.floor(5000 + Math.random() * 45000),
-        askVolume: Math.floor(5000 + Math.random() * 45000),
-      });
-    }
+  return candles.flatMap((candle) => {
+    const spread = Math.max(0.00001, Math.abs(candle.high - candle.low) * 0.02);
+    const volumePerTick = candle.volume > 0 ? Math.max(1, Math.floor(candle.volume / 4)) : 0;
+    const path = candle.close >= candle.open
+      ? [candle.open, candle.low, candle.high, candle.close]
+      : [candle.open, candle.high, candle.low, candle.close];
 
-    currentTime = new Date(currentTime.getTime() + timeframeToIncrement(timeframe));
+    return path.map((price, index) => ({
+      timestamp: new Date(candle.timestamp + Math.floor((increment / 4) * index)).toISOString(),
+      bid: price,
+      ask: price + spread,
+      bidVolume: volumePerTick,
+      askVolume: volumePerTick,
+    }));
+  });
+};
+
+export const generateTicks = async (
+  env: BackendEnv,
+  symbol: string,
+  startTime: Date,
+  endTime: Date,
+  timeframe: string,
+  assetClass?: MarketAssetClass,
+  provider: MarketDataProviderId = 'yahoo',
+): Promise<DukascopyTick[]> => {
+  const resolvedAssetClass = assetClass ?? inferAssetClass(symbol);
+  const cacheKey = buildCacheKey(symbol, resolvedAssetClass, provider, startTime, endTime, timeframe);
+  const now = Date.now();
+  const cached = marketDataCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > now) {
+    return cached.ticks;
   }
 
-  return ticks;
+  const inflight = inflightMarketData.get(cacheKey);
+
+  if (inflight) {
+    return inflight;
+  }
+
+  const marketDataProvider = getMarketDataProvider(provider, env);
+  const request = (async () => {
+    try {
+      const candles = await marketDataProvider.fetchCandles({
+        symbol,
+        startTime,
+        endTime,
+        timeframe,
+        assetClass: resolvedAssetClass,
+      });
+      const ticks = candlesToTicks(candles, timeframe);
+
+      marketDataCache.set(cacheKey, {
+        ticks,
+        expiresAt: Date.now() + CACHE_TTL_MS,
+        staleUntil: Date.now() + STALE_TTL_MS,
+      });
+
+      return ticks;
+    } catch (error) {
+      if (cached && cached.staleUntil > Date.now()) {
+        return cached.ticks;
+      }
+
+      throw error;
+    } finally {
+      inflightMarketData.delete(cacheKey);
+    }
+  })();
+
+  inflightMarketData.set(cacheKey, request);
+  return request;
 };

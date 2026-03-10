@@ -19,11 +19,13 @@ describe('BotsPage', () => {
           name: 'London Open',
           strategy: 'Momentum Strategy',
           symbol: 'EUR/USD',
-          exchange: 'oanda',
+          exchange: 'london',
           status: 'paused',
           parameters: {
             entryFrequency: EntryFrequency.DAILY,
             timeframe: '1d',
+            assetClass: 'forex',
+            provider: 'yahoo',
             takeProfitLevel: 2,
             stopLossLevel: 1,
             rsiOverbought: 65,
@@ -48,6 +50,8 @@ describe('BotsPage', () => {
 
     expect(screen.getByText('Trading Bots')).toBeInTheDocument();
     expect(screen.getByText('London Open')).toBeInTheDocument();
+    expect(screen.getByText('Forex')).toBeInTheDocument();
+    expect(screen.getByText('Yahoo Finance')).toBeInTheDocument();
     expect(screen.queryByText('Pause')).not.toBeInTheDocument();
     expect(screen.getByText('Start')).toBeInTheDocument();
   });

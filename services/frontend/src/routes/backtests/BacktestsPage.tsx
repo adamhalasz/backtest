@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation } from 'wouter';
 import { ChevronDown, ChevronRight, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { MarketMetadataBadges } from '@/components/market/MarketMetadataBadges';
 import { STRATEGIES } from '@/lib/strategies';
 import type { StoredBacktest } from '@/lib/types';
 import { useFetchBacktests } from './backtests-hooks';
@@ -29,6 +30,20 @@ const getBacktestName = (backtest: StoredBacktest) => {
   const year = endDate.getFullYear();
   const strategyShortName = backtest.strategy.replace(' Strategy', '');
   return `${startMonth}-${endMonth} ${year} ${strategyShortName}`;
+};
+
+const getStatusTone = (status: StoredBacktest['status']) => {
+  switch (status) {
+    case 'completed':
+      return 'bg-green-100 text-green-700';
+    case 'failed':
+      return 'bg-red-100 text-red-700';
+    case 'running':
+      return 'bg-blue-100 text-blue-700';
+    case 'pending':
+    default:
+      return 'bg-amber-100 text-amber-700';
+  }
 };
 
 export function BacktestsPage() {
@@ -128,6 +143,17 @@ export function BacktestsPage() {
                               {backtest.symbol} on {backtest.exchange} · Created{' '}
                               {new Date(backtest.created_at).toLocaleString()}
                             </p>
+                            <div className="mt-2">
+                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusTone(backtest.status)}`}>
+                                {backtest.status === 'completed' ? 'Completed' : backtest.status === 'failed' ? 'Failed' : backtest.status === 'running' ? 'Running' : 'Queued'}
+                              </span>
+                            </div>
+                            <div className="mt-2">
+                              <MarketMetadataBadges exchange={backtest.exchange} parameters={backtest.parameters} symbol={backtest.symbol} />
+                            </div>
+                            {backtest.status === 'failed' && backtest.error_message ? (
+                              <p className="mt-2 text-sm text-red-600">{backtest.error_message}</p>
+                            ) : null}
                             <p className="mt-1 text-sm text-gray-500">
                               Period: {new Date(backtest.start_date).toLocaleDateString()} -{' '}
                               {new Date(backtest.end_date).toLocaleDateString()}
@@ -150,17 +176,21 @@ export function BacktestsPage() {
                         <div className="mt-4 grid gap-4 md:grid-cols-4">
                           <div>
                             <p className="text-sm text-gray-600">Profit/Loss</p>
-                            <p className={profit >= 0 ? 'font-semibold text-green-600' : 'font-semibold text-red-600'}>
-                              {formatCurrency(profit)}
-                            </p>
+                            {backtest.status === 'completed' ? (
+                              <p className={profit >= 0 ? 'font-semibold text-green-600' : 'font-semibold text-red-600'}>
+                                {formatCurrency(profit)}
+                              </p>
+                            ) : (
+                              <p className="font-semibold text-gray-400">Pending</p>
+                            )}
                           </div>
                           <div>
                             <p className="text-sm text-gray-600">Win Rate</p>
-                            <p className="font-semibold text-gray-900">{formatPercent(backtest.win_rate)}</p>
+                            <p className="font-semibold text-gray-900">{backtest.status === 'completed' ? formatPercent(backtest.win_rate) : 'Pending'}</p>
                           </div>
                           <div>
                             <p className="text-sm text-gray-600">Final Balance</p>
-                            <p className="font-semibold text-gray-900">{formatCurrency(backtest.final_balance)}</p>
+                            <p className="font-semibold text-gray-900">{backtest.status === 'completed' ? formatCurrency(backtest.final_balance) : 'Pending'}</p>
                           </div>
                           <div>
                             <p className="text-sm text-gray-600">Duration</p>

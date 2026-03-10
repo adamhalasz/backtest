@@ -7,6 +7,7 @@ const DEFAULT_USER = {
   email: 'adamfsh@gmail.com',
   password: '123123',
   name: 'Adam Fsh',
+  role: 'admin',
 } as const;
 
 const seedRuns = new Map<string, Promise<void>>();

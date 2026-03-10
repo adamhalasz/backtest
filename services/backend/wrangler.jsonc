@@ -9,8 +9,38 @@
     "observability": {
         "enabled": true
     },
+    "workflows": [
+        {
+            "name": "backtest-workflow",
+            "binding": "BACKTEST_WORKFLOW",
+            "class_name": "BacktestWorkflow"
+        },
+        {
+            "name": "bulk-historical-ingestion",
+            "binding": "BULK_HISTORICAL_INGESTION_WORKFLOW",
+            "class_name": "BulkHistoricalIngestionWorkflow"
+        },
+        {
+            "name": "incremental-sync",
+            "binding": "INCREMENTAL_SYNC_WORKFLOW",
+            "class_name": "IncrementalSyncWorkflow"
+        },
+        {
+            "name": "symbol-backfill",
+            "binding": "SYMBOL_BACKFILL_WORKFLOW",
+            "class_name": "SymbolBackfillWorkflow"
+        }
+    ],
     "vars": {
         "BETTER_AUTH_URL": "http://localhost:8787",
-        "FRONTEND_ORIGIN": "http://localhost:5173"
+        "FRONTEND_ORIGIN": "http://localhost:5173",
+        "CLICKHOUSE_DB": "market_data",
+        "CCXT_EXCHANGE": "binance",
+        "CCXT_DELAY_MS": "1500",
+        "CCXT_BATCH_COOLDOWN_MS": "120000",
+        "CCXT_MAX_RETRIES": "3",
+        "YFINANCE_DELAY_MS": "1000",
+        "YFINANCE_BATCH_COOLDOWN_MS": "300000",
+        "YFINANCE_MAX_RETRIES": "3"
     }
 }

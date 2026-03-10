@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'wouter';
-import { StoredBacktest, Trade, Candle, EntryFrequency } from '@/lib/types';
+import { StoredBacktest, Trade } from '@/lib/types';
 import { ArrowLeft, Activity, TrendingUp, TrendingDown, Calendar, Timer, RefreshCw, Settings } from 'lucide-react';
-import { TradingBacktester } from '@/lib/backtest';
 import { TradeHistoryItem } from '@/routes/backtests/components/trade-history-item';
 import { STRATEGIES } from '@/lib/strategies';
 import { TimelineChart } from '@/components/charts/scichart';
+import { MarketMetadataBadges } from '@/components/market/MarketMetadataBadges';
 import { Button } from '@/components/ui/button';
 import moment from 'moment-timezone';
 import { DukascopyClient } from '@/lib/dukascopy';
-import { getBacktest, listBacktestTrades, saveBacktestRun } from '@/lib/api-client';
+import { getBacktest, listBacktestTrades, queueBacktestRun, waitForBacktestCompletion } from '@/lib/api-client';
+import { buildMarketDataRequestSymbol, resolveStoredAssetClass, resolveStoredProvider } from '@/lib/market';
 
 export function BacktestDetailPage() {
   const { id } = useParams();
@@ -98,14 +99,20 @@ export function BacktestDetailPage() {
           setLoadingTicks(true);
           try {
             const dukascopyClient = DukascopyClient.getInstance();
-            const [baseCurrency, targetCurrency] = backtestData.symbol.split('/');
-            const symbol = `${baseCurrency}${targetCurrency}`;
+            const assetClass = resolveStoredAssetClass(backtestData.parameters, backtestData.symbol);
+            const provider = resolveStoredProvider(backtestData.parameters, backtestData.symbol);
+            const symbol = buildMarketDataRequestSymbol(backtestData.symbol, assetClass);
             
             const ticks = await dukascopyClient.getTicks(
               symbol,
               new Date(backtestData.start_date),
               new Date(backtestData.end_date),
-              selectedTimeframe
+              selectedTimeframe,
+              undefined,
+              {
+                assetClass,
+                provider,
+              },
             );
             
             // Convert ticks to chart data format
@@ -153,22 +160,7 @@ export function BacktestDetailPage() {
     if (!backtest) return;
     setRerunning(true);
     try {
-      const backtester = new TradingBacktester({
-        symbol: backtest.symbol,
-        exchange: backtest.exchange,
-        strategy: backtest.strategy,
-        timeframe: '1d',
-        startDate: backtest.start_date,
-        endDate: backtest.end_date,
-        initialBalance: backtest.initial_balance,
-        riskPerTrade: 2,
-        maxTradeTime: 8,
-        entryFrequency: STRATEGIES.find(s => s.name === backtest.strategy)?.defaultFrequency || EntryFrequency.DAILY
-      });
-
-      const results = await backtester.runBacktest();
-
-      const newBacktest = await saveBacktestRun({
+      const queuedBacktest = await queueBacktestRun({
         backtest: {
           symbol: backtest.symbol,
           exchange: backtest.exchange,
@@ -176,13 +168,13 @@ export function BacktestDetailPage() {
           start_date: backtest.start_date,
           end_date: backtest.end_date,
           initial_balance: backtest.initial_balance,
-          final_balance: results.finalBalance,
-          win_rate: results.metrics.winRate,
-          profit_factor: Number.isFinite(results.metrics.profitFactor) ? results.metrics.profitFactor : 0,
-          max_drawdown: results.metrics.maxDrawdown,
           parameters: backtest.parameters,
         },
-        trades: results.trades,
+      });
+
+      const newBacktest = await waitForBacktestCompletion(queuedBacktest.id, {
+        intervalMs: 2000,
+        timeoutMs: 10 * 60 * 1000,
       });
 
       // Navigate to the new backtest result
@@ -234,6 +226,42 @@ export function BacktestDetailPage() {
   }
 
   if (!backtest) return null;
+
+  if (backtest.status !== 'completed') {
+    return (
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="mb-6 flex items-center justify-between">
+          <Button onClick={() => navigate('/')} variant="outline">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Backtests
+          </Button>
+          <Button onClick={handleRerun} disabled={rerunning}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${rerunning ? 'animate-spin' : ''}`} />
+            {rerunning ? 'Queueing...' : 'Rerun Backtest'}
+          </Button>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <Activity className={`h-5 w-5 ${backtest.status === 'failed' ? 'text-red-500' : 'animate-spin text-indigo-600'}`} />
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">{getBacktestName(backtest)}</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                {backtest.status === 'failed'
+                  ? backtest.error_message || 'This backtest workflow failed.'
+                  : 'This backtest is still running in Cloudflare Workflows. Refresh in a moment to see completed metrics and trades.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <MarketMetadataBadges exchange={backtest.exchange} parameters={backtest.parameters} symbol={backtest.symbol} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const profit = backtest.final_balance - backtest.initial_balance;
   const profitPercentage = ((profit / backtest.initial_balance) * 100);
 
@@ -290,6 +318,9 @@ export function BacktestDetailPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{getBacktestName(backtest)}</h1>
         <p className="text-lg text-gray-600">{backtest.symbol} on {backtest.exchange}</p>
+        <div className="mt-3">
+          <MarketMetadataBadges exchange={backtest.exchange} parameters={backtest.parameters} symbol={backtest.symbol} />
+        </div>
       </div>
 
       {/* Date Range Banner */}

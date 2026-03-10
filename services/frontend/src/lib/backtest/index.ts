@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import moment from 'moment-timezone';
 import { CURRENCIES, EXCHANGES } from '@/lib/constants';
+import { estimateTradingDays, getAvailableExchanges, isAlwaysOpenExchange, parseForexPair } from '@/lib/market';
 import { STRATEGIES } from '@/lib/strategies';
 import type { Strategy } from '@/lib/strategies/Strategy';
 import { fetchBacktestData } from '@/lib/backtestApi';
@@ -89,7 +90,9 @@ export class TradingBacktester {
 
     // Calculate trading days
     const totalDays = Math.ceil((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60 * 24));
-    const tradingDays = Math.ceil(totalDays * 5/7); // Approximate trading days excluding weekends
+    const assetClass = this.config.assetClass ?? 'forex';
+    const provider = this.config.provider ?? 'yahoo';
+    const tradingDays = estimateTradingDays(totalDays, assetClass);
     
     // Get minimum required candles
     const minRequiredCandles = this.getMinimumRequiredCandles();
@@ -104,31 +107,38 @@ export class TradingBacktester {
       );
     }
 
-    const [baseCurrency, targetCurrency] = this.config.symbol.split('/');
-    
     // Fetch historical data for backtesting
     const historicalData = await fetchBacktestData(
       moment(startTime).format('YYYY-MM-DD'),
       moment(endTime).format('YYYY-MM-DD'),
-      baseCurrency,
-      targetCurrency,
+      this.config.symbol,
+      assetClass,
+      provider,
       this.config.timeframe
     );
 
     // Validate currencies
-    if (!CURRENCIES.find(c => c.code === baseCurrency) || !CURRENCIES.find(c => c.code === targetCurrency)) {
-      throw new Error(`Invalid currency pair: ${this.config.symbol}`);
+    if (assetClass === 'forex') {
+      const forexPair = parseForexPair(this.config.symbol);
+
+      if (
+        !forexPair ||
+        !CURRENCIES.find((currency) => currency.code === forexPair.baseCurrency) ||
+        !CURRENCIES.find((currency) => currency.code === forexPair.targetCurrency)
+      ) {
+        throw new Error(`Invalid currency pair: ${this.config.symbol}`);
+      }
     }
 
     // Get exchange configuration
-    const exchange = EXCHANGES.find(e => e.id === this.config.exchange);
+    const exchange = getAvailableExchanges(assetClass).find((item) => item.id === this.config.exchange) ?? EXCHANGES.find((item) => item.id === this.config.exchange);
     if (!exchange) {
       throw new Error(`Invalid exchange: ${this.config.exchange}`);
     }
 
     // Filter data based on exchange hours
     const candles = historicalData.filter(data => {
-      if (this.config.timeframe === '1d') return true;
+      if (this.config.timeframe === '1d' || isAlwaysOpenExchange(exchange.id)) return true;
       
       const exchangeTime = moment.tz(data.date, exchange.timezone);
       const hour = exchangeTime.hour();

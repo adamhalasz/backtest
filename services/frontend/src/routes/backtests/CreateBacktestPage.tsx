@@ -7,18 +7,21 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
-import { CURRENCIES, EXCHANGES, TIMEFRAMES } from '@/lib/constants';
+import { ASSET_CLASSES, CRYPTO_SYMBOLS, CURRENCIES, MARKET_DATA_PROVIDERS, STOCK_SYMBOLS, TIMEFRAMES } from '@/lib/constants';
 import { STRATEGIES, STRATEGY_ICONS, STRATEGY_TIMEFRAMES } from '@/lib/strategies';
 import { ArrowLeft, AlertTriangle, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HistoryProvider } from '@/lib/history/HistoryProvider';
-import { TradingBacktester } from '@/lib/backtest';
 import { EntryFrequency } from '@/lib/types';
-import { saveBacktestRun } from '@/lib/api-client';
+import { queueBacktestRun, waitForBacktestCompletion } from '@/lib/api-client';
+import { buildStoredSymbol, estimateTradingDays, getAvailableExchanges, getDefaultExchangeForAssetClass, getDefaultProviderForAssetClass, getDefaultSymbolForAssetClass, type MarketAssetClass, type MarketDataProviderId } from '@/lib/market';
 
 type StrategyIcon = (typeof STRATEGY_ICONS)[keyof typeof STRATEGY_ICONS];
 type CreateBacktestFormData = {
   dataSource: 'live' | 'synthetic';
+  assetClass: MarketAssetClass;
+  provider: MarketDataProviderId;
+  symbol: string;
   baseCurrency: string;
   strategy: string;
   cumulativeTrading: boolean;
@@ -73,6 +76,9 @@ export function CreateBacktestPage() {
 
   const [formData, setFormData] = React.useState<CreateBacktestFormData>({
     dataSource: 'live',
+    assetClass: 'forex',
+    provider: getDefaultProviderForAssetClass('forex'),
+    symbol: getDefaultSymbolForAssetClass('crypto'),
     baseCurrency: 'EUR',
     strategy: defaultStrategy.name,
     cumulativeTrading: false,
@@ -87,7 +93,7 @@ export function CreateBacktestPage() {
     atrPeriod: 14,
     atrMultiplier: 2,
     targetCurrency: 'USD',
-    exchange: EXCHANGES[0].id,
+    exchange: getDefaultExchangeForAssetClass('forex'),
     timeframe: defaultTimeframe,
     startDate: defaultStartDate,
     endDate: defaultEndDate,
@@ -99,13 +105,14 @@ export function CreateBacktestPage() {
   });
 
   const [dataInfo, setDataInfo] = React.useState<{ size: number; points: number; time: number } | null>(null);
+  const availableExchanges = React.useMemo(() => getAvailableExchanges(formData.assetClass), [formData.assetClass]);
 
   // Calculate data info whenever relevant form fields change
   React.useEffect(() => {
     const start = new Date(formData.startDate);
     const end = new Date(formData.endDate);
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    const tradingDays = Math.ceil(days * 5/7); // Adjust for trading days
+    const tradingDays = estimateTradingDays(days, formData.assetClass);
     
     // Calculate data points based on timeframe
     let points = 0;
@@ -155,7 +162,8 @@ export function CreateBacktestPage() {
     formData.startDate,
     formData.endDate,
     formData.strategy,
-    formData.dataSource
+    formData.dataSource,
+    formData.assetClass,
   ]);
 
   // Calculate validation info whenever relevant form fields change
@@ -165,7 +173,7 @@ export function CreateBacktestPage() {
     
     // Calculate total and trading days
     const totalDays = Math.ceil((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60 * 24));
-    const tradingDays = Math.ceil(totalDays * 5/7); // Approximate trading days excluding weekends
+    const tradingDays = estimateTradingDays(totalDays, formData.assetClass);
     
     // Get minimum required candles based on strategy
     const strategy = STRATEGIES.find(s => s.name === formData.strategy);
@@ -212,7 +220,7 @@ export function CreateBacktestPage() {
       isValid,
       message
     });
-  }, [formData.startDate, formData.endDate, formData.strategy]);
+  }, [formData.startDate, formData.endDate, formData.strategy, formData.assetClass]);
 
   const handleStrategyChange = (value: string) => {
     const strategy = STRATEGIES.find(s => s.name === value);
@@ -283,6 +291,13 @@ export function CreateBacktestPage() {
     
 
     try {
+      const storedSymbol = buildStoredSymbol({
+        assetClass: formData.assetClass,
+        symbol: formData.symbol,
+        baseCurrency: formData.baseCurrency,
+        targetCurrency: formData.targetCurrency,
+      });
+
       // Validate date range
       const start = new Date(formData.startDate);
       const end = new Date(formData.endDate);
@@ -317,56 +332,23 @@ export function CreateBacktestPage() {
       const estimatedSeconds = days * timeframeMultiplier;
       setEstimatedTime(`${Math.ceil(estimatedSeconds / 60)} minutes`);
 
-      const backtester = new TradingBacktester({
-        symbol: `${formData.baseCurrency}/${formData.targetCurrency}`,
-        exchange: formData.exchange,
-        entryFrequency: STRATEGIES.find(s => s.name === formData.strategy)?.defaultFrequency || EntryFrequency.DAILY,
-        maxTradeTime: 8, // Default to 8 hours per session
-        strategy: formData.strategy,
-        timeframe: formData.timeframe,
-        cumulativeTrading: formData.cumulativeTrading,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        initialBalance: formData.initialBalance,
-        riskPerTrade: 2, // Default risk per trade
-        takeProfitLevel: formData.takeProfitLevel,
-        stopLossLevel: formData.stopLossLevel,
-        rsiOverbought: formData.rsiOverbought,
-        rsiOversold: formData.rsiOversold,
-        onProgress: (progress) => {
-          if (typeof progress === 'number' && !isNaN(progress)) {
-            setProgress(progress);
-          }
-          
-          // Update estimated time remaining
-          if (startTimeRef.current && progress > 0) {
-            const elapsed = (Date.now() - startTimeRef.current) / 1000;
-            const totalEstimated = elapsed / (progress / 100);
-            const remaining = Math.ceil((totalEstimated - elapsed) / 60);
-            setEstimatedTime(`${remaining} minutes`);
-          }
-        }
-      });
+      setProgress(10);
 
-      const backtestResults = await backtester.runBacktest();
-
-      if (backtestResults.trades.length === 0) {
-        throw new Error('No trades were generated during the backtest period. Try adjusting the parameters or selecting a different date range.');
-      }
-
-      const backtestData = await saveBacktestRun({
+      const queuedBacktest = await queueBacktestRun({
         backtest: {
-          symbol: `${formData.baseCurrency}/${formData.targetCurrency}`,
+          symbol: storedSymbol,
           exchange: formData.exchange,
           strategy: formData.strategy,
           start_date: formData.startDate,
           end_date: formData.endDate,
           initial_balance: formData.initialBalance,
-          final_balance: backtestResults.finalBalance,
-          win_rate: backtestResults.metrics.winRate || 0,
-          profit_factor: Number.isFinite(backtestResults.metrics.profitFactor) ? backtestResults.metrics.profitFactor : 0,
-          max_drawdown: backtestResults.metrics.maxDrawdown || 0,
           parameters: {
+            assetClass: formData.assetClass,
+            provider: formData.provider,
+            timeframe: formData.timeframe,
+            entryFrequency: STRATEGIES.find(s => s.name === formData.strategy)?.defaultFrequency || EntryFrequency.DAILY,
+            riskPerTrade: 2,
+            maxTradeTime: 8,
             takeProfitLevel: formData.takeProfitLevel,
             stopLossLevel: formData.stopLossLevel,
             rsiOverbought: formData.rsiOverbought,
@@ -382,8 +364,17 @@ export function CreateBacktestPage() {
             atrMultiplier: formData.atrMultiplier,
           }
         },
-        trades: backtestResults.trades,
       });
+
+      setProgress(35);
+      setEstimatedTime('Queued in Cloudflare Workflow');
+
+      const backtestData = await waitForBacktestCompletion(queuedBacktest.id, {
+        intervalMs: 2000,
+        timeoutMs: 10 * 60 * 1000,
+      });
+
+      setProgress(100);
 
       // Navigate to the backtest result page
       navigate(`/backtest/${backtestData.id}`);
@@ -418,7 +409,7 @@ export function CreateBacktestPage() {
           <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-indigo-700">
-                {loading ? 'Processing Backtest...' : 'Estimated Processing Time'}
+                {loading ? 'Running Backtest in Cloudflare Workflow...' : 'Estimated Processing Time'}
               </span>
               <span className="text-sm font-medium text-indigo-700">
                 {loading && progress !== null ? `${Math.round(progress)}%` : estimatedTime}
@@ -436,6 +427,53 @@ export function CreateBacktestPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <Label>Asset Class</Label>
+            <Select
+              value={formData.assetClass}
+              onValueChange={(value) => {
+                const nextAssetClass = value as MarketAssetClass;
+                setFormData((current) => ({
+                  ...current,
+                  assetClass: nextAssetClass,
+                    provider: getDefaultProviderForAssetClass(nextAssetClass),
+                  exchange: getDefaultExchangeForAssetClass(nextAssetClass),
+                  symbol: nextAssetClass === 'forex' ? current.symbol : getDefaultSymbolForAssetClass(nextAssetClass),
+                }));
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select asset class" />
+              </SelectTrigger>
+              <SelectContent>
+                {ASSET_CLASSES.map((assetClass) => (
+                  <SelectItem key={assetClass.value} value={assetClass.value}>
+                    {assetClass.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Provider</Label>
+            <Select
+              value={formData.provider}
+              onValueChange={(value) => setFormData((current) => ({ ...current, provider: value as MarketDataProviderId }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select provider" />
+              </SelectTrigger>
+              <SelectContent>
+                {MARKET_DATA_PROVIDERS.map((provider) => (
+                  <SelectItem key={provider.value} value={provider.value}>
+                    {provider.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div>
             <Label>Strategy</Label>
             <Popover>
@@ -523,65 +561,103 @@ export function CreateBacktestPage() {
             </p>
           </div>
 
-          <div>
-            <Label>Base Currency</Label>
-            <Select
-              value={formData.baseCurrency}
-              onValueChange={(value) => setFormData({ ...formData, baseCurrency: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select base currency" />
-              </SelectTrigger>
-              <SelectContent>
-                {CURRENCIES.map((currency) => (
-                  <SelectItem key={currency.code} value={currency.code}>
-                    {currency.name} ({currency.code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {formData.assetClass === 'forex' ? (
+            <>
+              <div>
+                <Label>Base Currency</Label>
+                <Select
+                  value={formData.baseCurrency}
+                  onValueChange={(value) => setFormData({ ...formData, baseCurrency: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select base currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((currency) => (
+                      <SelectItem key={currency.code} value={currency.code}>
+                        {currency.name} ({currency.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Target Currency</Label>
+                <Select
+                  value={formData.targetCurrency}
+                  onValueChange={(value) => setFormData({ ...formData, targetCurrency: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select target currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((currency) => (
+                      <SelectItem 
+                        key={currency.code} 
+                        value={currency.code}
+                        disabled={currency.code === formData.baseCurrency}
+                      >
+                        {currency.name} ({currency.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          ) : (
+            <div className="md:col-span-2 space-y-4">
+              <div>
+                <Label>{formData.assetClass === 'crypto' ? 'Crypto Symbol' : 'Stock Symbol'}</Label>
+                <Select
+                  value={formData.symbol}
+                  onValueChange={(value) => setFormData((current) => ({ ...current, symbol: value.toUpperCase() }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select market symbol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(formData.assetClass === 'crypto' ? CRYPTO_SYMBOLS : STOCK_SYMBOLS).map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Custom Symbol</Label>
+                <input
+                  type="text"
+                  value={formData.symbol}
+                  onChange={(e) => setFormData((current) => ({ ...current, symbol: e.target.value.toUpperCase() }))}
+                  placeholder={formData.assetClass === 'crypto' ? 'BTC-USD' : 'AAPL'}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+            </div>
+          )}
 
           <div>
-            <Label>Target Currency</Label>
-            <Select
-              value={formData.targetCurrency}
-              onValueChange={(value) => setFormData({ ...formData, targetCurrency: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select target currency" />
-              </SelectTrigger>
-              <SelectContent>
-                {CURRENCIES.map((currency) => (
-                  <SelectItem 
-                    key={currency.code} 
-                    value={currency.code}
-                    disabled={currency.code === formData.baseCurrency}
-                  >
-                    {currency.name} ({currency.code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label>Exchange</Label>
+            <Label>{formData.assetClass === 'crypto' ? 'Market Session' : 'Exchange'}</Label>
             <Select
               value={formData.exchange}
               onValueChange={(value) => setFormData({ ...formData, exchange: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select exchange" />
+                <SelectValue placeholder={formData.assetClass === 'crypto' ? 'Select market session' : 'Select exchange'} />
               </SelectTrigger>
               <SelectContent>
-                {EXCHANGES.map((exchange) => (
+                {availableExchanges.map((exchange) => (
                   <SelectItem key={exchange.id} value={exchange.id}>
                     {exchange.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <p className="mt-1 text-sm text-gray-500">
+              {availableExchanges.find((exchange) => exchange.id === formData.exchange)?.description}
+            </p>
           </div>
 
           <div className="col-span-2 mb-4">
@@ -613,7 +689,7 @@ export function CreateBacktestPage() {
                       </div>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Trading Days:</span>
+                      <span className="text-gray-600">{formData.assetClass === 'crypto' ? 'Market Days:' : 'Trading Days:'}</span>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{validation.tradingDays}</span>
                         <span className="text-xs text-gray-500">

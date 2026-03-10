@@ -6,13 +6,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
-import { CURRENCIES, EXCHANGES, TIMEFRAMES } from '@/lib/constants';
+import { ASSET_CLASSES, CRYPTO_SYMBOLS, CURRENCIES, MARKET_DATA_PROVIDERS, STOCK_SYMBOLS, TIMEFRAMES } from '@/lib/constants';
+import { buildStoredSymbol, getAvailableExchanges, getDefaultExchangeForAssetClass, getDefaultProviderForAssetClass, getDefaultSymbolForAssetClass, type MarketAssetClass, type MarketDataProviderId } from '@/lib/market';
 import { STRATEGIES } from '@/lib/strategies';
 import { EntryFrequency, type Bot } from '@/lib/types';
 import { useCreateBot } from './bots-hooks';
 
 type CreateBotFormData = {
 	name: string;
+	assetClass: MarketAssetClass;
+	provider: MarketDataProviderId;
+	symbol: string;
 	baseCurrency: string;
 	strategy: string;
 	targetCurrency: string;
@@ -41,10 +45,13 @@ export function CreateBotPage() {
 	const defaultConfig = defaultStrategy.getDefaultConfig();
 	const [formData, setFormData] = React.useState<CreateBotFormData>({
 		name: '',
+		assetClass: 'forex',
+		provider: getDefaultProviderForAssetClass('forex'),
+		symbol: getDefaultSymbolForAssetClass('crypto'),
 		baseCurrency: 'EUR',
 		strategy: defaultStrategy.name,
 		targetCurrency: 'USD',
-		exchange: EXCHANGES[0].id,
+		exchange: getDefaultExchangeForAssetClass('forex'),
 		timeframe: '1d',
 		entryFrequency: defaultStrategy.defaultFrequency,
 		takeProfitLevel: defaultConfig.takeProfitLevel,
@@ -61,6 +68,7 @@ export function CreateBotPage() {
 		atrPeriod: 14,
 		atrMultiplier: 2,
 	});
+	const availableExchanges = React.useMemo(() => getAvailableExchanges(formData.assetClass), [formData.assetClass]);
 
 	const handleStrategyChange = (value: string) => {
 		const strategy = STRATEGIES.find((item) => item.name === value);
@@ -81,15 +89,24 @@ export function CreateBotPage() {
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
 
+		const symbol = buildStoredSymbol({
+			assetClass: formData.assetClass,
+			symbol: formData.symbol,
+			baseCurrency: formData.baseCurrency,
+			targetCurrency: formData.targetCurrency,
+		});
+
 		const payload: Omit<Bot, 'id' | 'created_at' | 'updated_at' | 'last_trade_at' | 'total_trades' | 'win_rate' | 'total_profit'> = {
 			name: formData.name,
 			strategy: formData.strategy,
-			symbol: `${formData.baseCurrency}/${formData.targetCurrency}`,
+			symbol,
 			exchange: formData.exchange,
 			status: 'paused',
 			parameters: {
 				entryFrequency: formData.entryFrequency,
 				timeframe: formData.timeframe,
+				assetClass: formData.assetClass,
+				provider: formData.provider,
 				takeProfitLevel: formData.takeProfitLevel,
 				stopLossLevel: formData.stopLossLevel,
 				rsiOverbought: formData.rsiOverbought,
@@ -157,52 +174,135 @@ export function CreateBotPage() {
 						<p className="mt-1 text-sm text-gray-500">{STRATEGIES.find((item) => item.name === formData.strategy)?.description}</p>
 					</div>
 
-					<div>
-						<Label>Base Currency</Label>
-						<Select value={formData.baseCurrency} onValueChange={(value) => setFormData((current) => ({ ...current, baseCurrency: value }))}>
-							<SelectTrigger>
-								<SelectValue placeholder="Select base currency" />
-							</SelectTrigger>
-							<SelectContent>
-								{CURRENCIES.map((currency) => (
-									<SelectItem key={currency.code} value={currency.code}>
-										{currency.name} ({currency.code})
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
+						<div>
+							<Label>Asset Class</Label>
+							<Select
+								value={formData.assetClass}
+								onValueChange={(value) => {
+									const nextAssetClass = value as MarketAssetClass;
+									setFormData((current) => ({
+										...current,
+										assetClass: nextAssetClass,
+										provider: getDefaultProviderForAssetClass(nextAssetClass),
+										exchange: getDefaultExchangeForAssetClass(nextAssetClass),
+										symbol: nextAssetClass === 'forex' ? current.symbol : getDefaultSymbolForAssetClass(nextAssetClass),
+									}));
+								}}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="Select asset class" />
+								</SelectTrigger>
+								<SelectContent>
+									{ASSET_CLASSES.map((assetClass) => (
+										<SelectItem key={assetClass.value} value={assetClass.value}>
+											{assetClass.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div>
+							<Label>Provider</Label>
+							<Select
+								value={formData.provider}
+								onValueChange={(value) => setFormData((current) => ({ ...current, provider: value as MarketDataProviderId }))}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="Select provider" />
+								</SelectTrigger>
+								<SelectContent>
+									{MARKET_DATA_PROVIDERS.map((provider) => (
+										<SelectItem key={provider.value} value={provider.value}>
+											{provider.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						{formData.assetClass === 'forex' ? (
+							<>
+								<div>
+									<Label>Base Currency</Label>
+									<Select value={formData.baseCurrency} onValueChange={(value) => setFormData((current) => ({ ...current, baseCurrency: value }))}>
+										<SelectTrigger>
+											<SelectValue placeholder="Select base currency" />
+										</SelectTrigger>
+										<SelectContent>
+											{CURRENCIES.map((currency) => (
+												<SelectItem key={currency.code} value={currency.code}>
+													{currency.name} ({currency.code})
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+
+								<div>
+									<Label>Target Currency</Label>
+									<Select value={formData.targetCurrency} onValueChange={(value) => setFormData((current) => ({ ...current, targetCurrency: value }))}>
+										<SelectTrigger>
+											<SelectValue placeholder="Select target currency" />
+										</SelectTrigger>
+										<SelectContent>
+											{CURRENCIES.map((currency) => (
+												<SelectItem key={currency.code} value={currency.code} disabled={currency.code === formData.baseCurrency}>
+													{currency.name} ({currency.code})
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							</>
+						) : (
+							<div className="md:col-span-2 space-y-4">
+								<div>
+									<Label>{formData.assetClass === 'crypto' ? 'Crypto Symbol' : 'Stock Symbol'}</Label>
+									<Select value={formData.symbol} onValueChange={(value) => setFormData((current) => ({ ...current, symbol: value.toUpperCase() }))}>
+										<SelectTrigger>
+											<SelectValue placeholder="Select market symbol" />
+										</SelectTrigger>
+										<SelectContent>
+											{(formData.assetClass === 'crypto' ? CRYPTO_SYMBOLS : STOCK_SYMBOLS).map((option) => (
+												<SelectItem key={option.value} value={option.value}>
+													{option.label}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+
+								<div>
+									<Label>Custom Symbol</Label>
+									<input
+										type="text"
+										value={formData.symbol}
+										onChange={(event) => setFormData((current) => ({ ...current, symbol: event.target.value.toUpperCase() }))}
+										placeholder={formData.assetClass === 'crypto' ? 'BTC-USD' : 'AAPL'}
+										className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+									/>
+								</div>
+							</div>
+						)}
 
 					<div>
-						<Label>Target Currency</Label>
-						<Select value={formData.targetCurrency} onValueChange={(value) => setFormData((current) => ({ ...current, targetCurrency: value }))}>
-							<SelectTrigger>
-								<SelectValue placeholder="Select target currency" />
-							</SelectTrigger>
-							<SelectContent>
-								{CURRENCIES.map((currency) => (
-									<SelectItem key={currency.code} value={currency.code} disabled={currency.code === formData.baseCurrency}>
-										{currency.name} ({currency.code})
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-
-					<div>
-						<Label>Exchange</Label>
+						<Label>{formData.assetClass === 'crypto' ? 'Market Session' : 'Exchange'}</Label>
 						<Select value={formData.exchange} onValueChange={(value) => setFormData((current) => ({ ...current, exchange: value }))}>
 							<SelectTrigger>
-								<SelectValue placeholder="Select exchange" />
+								<SelectValue placeholder={formData.assetClass === 'crypto' ? 'Select market session' : 'Select exchange'} />
 							</SelectTrigger>
 							<SelectContent>
-								{EXCHANGES.map((exchange) => (
+								{availableExchanges.map((exchange) => (
 									<SelectItem key={exchange.id} value={exchange.id}>
 										{exchange.name}
 									</SelectItem>
 								))}
 							</SelectContent>
 						</Select>
+						<p className="mt-1 text-sm text-gray-500">
+							{availableExchanges.find((exchange) => exchange.id === formData.exchange)?.description}
+						</p>
 					</div>
 
 					<div>

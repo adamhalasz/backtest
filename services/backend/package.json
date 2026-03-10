@@ -7,18 +7,26 @@
     "dev": "wrangler dev --port 8787",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "check": "pnpm typecheck"
+    "check": "pnpm typecheck",
+    "ingest": "node ./scripts/ingestion.mjs",
+    "ingest:schema": "node ./scripts/ingestion.mjs schema",
+    "ingest:forex": "node ./scripts/ingestion.mjs bulk --assetType forex --timeframe 1m",
+    "ingest:logs": "node ./scripts/ingestion.mjs logs --assetType forex --limit 20"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.5.4",
     "@neondatabase/serverless": "^1.0.2",
     "better-auth": "^1.5.4",
+    "ccxt": "^4.5.42",
     "drizzle-orm": "^0.45.1",
+    "fflate": "^0.8.2",
     "hono": "^4.12.6",
+    "protobufjs": "^8.0.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260303.0",
+    "ccxt": "^4.5.42",
     "drizzle-kit": "^0.31.9",
     "typescript": "^5.9.2",
     "wrangler": "^4.71.0"

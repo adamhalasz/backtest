@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CURRENCIES, TIMEFRAMES } from '@/lib/constants';
+import { ASSET_CLASSES, CRYPTO_SYMBOLS, CURRENCIES, MARKET_DATA_PROVIDERS, STOCK_SYMBOLS, TIMEFRAMES } from '@/lib/constants';
 import { TimelineChart } from '@/components/charts/TimelineChart';
 import { Calendar, Clock, RefreshCw, Activity, AlertTriangle, ChevronDown, Settings } from 'lucide-react';
 import moment, { Moment } from 'moment-timezone';
@@ -10,6 +10,18 @@ import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { getDefaultProviderForAssetClass, type MarketAssetClass, type MarketDataProviderId } from '@/lib/market';
+
+type DataExplorerFilters = {
+  assetClass: MarketAssetClass;
+  provider: MarketDataProviderId;
+  symbol: string;
+  baseCurrency: string;
+  targetCurrency: string;
+  timeframe: string;
+  startDate: string;
+  endDate: string;
+};
 
 export function DataExplorerPage() {
   const [loading, setLoading] = useState(false);
@@ -28,7 +40,10 @@ export function DataExplorerPage() {
     theme: 'light' as 'light' | 'dark',
     animation: true
   });
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<DataExplorerFilters>({
+    assetClass: 'forex' as const,
+    provider: getDefaultProviderForAssetClass('forex'),
+    symbol: 'BTC-USD',
     baseCurrency: 'EUR',
     targetCurrency: 'USD',
     timeframe: 'all', // Default to All Time
@@ -237,14 +252,24 @@ export function DataExplorerPage() {
       setError(null);
       try {
         const dukascopyClient = DukascopyClient.getInstance();
-        const symbol = `${filters.baseCurrency}${filters.targetCurrency}`;
+        const symbol = filters.assetClass === 'forex'
+          ? `${filters.baseCurrency}${filters.targetCurrency}`
+          : filters.symbol.trim().toUpperCase();
+
+        if (!symbol) {
+          throw new Error('A market symbol is required.');
+        }
         
         const ticks = await dukascopyClient.getTicks(
           symbol,
           new Date(filters.startDate),
           new Date(filters.endDate),
           filters.timeframe,
-          (progress) => setProgress(progress)
+          (progress) => setProgress(progress),
+          {
+            assetClass: filters.assetClass,
+            provider: filters.provider,
+          },
         );
         
         // Convert ticks to chart data format
@@ -295,7 +320,7 @@ export function DataExplorerPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Exchange Rate Explorer</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Market Data Explorer</h1>
         <div className="flex items-center gap-4">
           <Popover>
             <PopoverTrigger asChild>
@@ -421,7 +446,61 @@ export function DataExplorerPage() {
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Asset Class
+              </label>
+              <select
+                value={filters.assetClass}
+                onChange={(e) => {
+                  const nextAssetClass = e.target.value as 'forex' | 'crypto' | 'stock';
+                  const nextSymbol = nextAssetClass === 'crypto'
+                    ? CRYPTO_SYMBOLS[0].value
+                    : nextAssetClass === 'stock'
+                      ? STOCK_SYMBOLS[0].value
+                      : filters.symbol;
+
+                  setFilters((current) => ({
+                    ...current,
+                    assetClass: nextAssetClass,
+                    provider: getDefaultProviderForAssetClass(nextAssetClass),
+                    symbol: nextSymbol,
+                  }));
+                }}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {ASSET_CLASSES.map((assetClass) => (
+                  <option key={assetClass.value} value={assetClass.value}>
+                    {assetClass.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Provider
+              </label>
+              <select
+                value={filters.provider}
+                onChange={(e) => setFilters((current) => ({ ...current, provider: e.target.value as MarketDataProviderId }))}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {MARKET_DATA_PROVIDERS.map((provider) => (
+                  <option key={provider.value} value={provider.value}>
+                    {provider.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {filters.assetClass === 'forex' ? (
+            <>
           <div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
@@ -463,6 +542,36 @@ export function DataExplorerPage() {
               </select>
             </div>
           </div>
+            </>
+          ) : (
+            <div className="md:col-span-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  {filters.assetClass === 'crypto' ? 'Crypto Symbol' : 'Stock Symbol'}
+                </label>
+                <div className="space-y-2">
+                  <select
+                    value={filters.symbol}
+                    onChange={(e) => setFilters((current) => ({ ...current, symbol: e.target.value.toUpperCase() }))}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    {(filters.assetClass === 'crypto' ? CRYPTO_SYMBOLS : STOCK_SYMBOLS).map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={filters.symbol}
+                    onChange={(e) => setFilters((current) => ({ ...current, symbol: e.target.value.toUpperCase() }))}
+                    placeholder={filters.assetClass === 'crypto' ? 'BTC-USD' : 'AAPL'}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -1,3 +1,4 @@
+import type { MarketAssetClass, MarketDataProviderId } from '@/lib/market';
 import type { Bot, StoredBacktest, Trade } from '@/lib/types';
 
 const configuredBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
@@ -64,6 +65,7 @@ const normalizeTrade = (trade: Record<string, unknown>): Trade => ({
 const normalizeBacktest = (backtest: Record<string, unknown>): StoredBacktest => ({
   id: String(backtest.id),
   created_at: String(backtest.created_at),
+  updated_at: typeof backtest.updated_at === 'string' ? backtest.updated_at : undefined,
   symbol: String(backtest.symbol),
   exchange: String(backtest.exchange),
   strategy: String(backtest.strategy),
@@ -74,6 +76,9 @@ const normalizeBacktest = (backtest: Record<string, unknown>): StoredBacktest =>
   win_rate: Number(backtest.win_rate),
   profit_factor: backtest.profit_factor == null ? 0 : Number(backtest.profit_factor),
   max_drawdown: Number(backtest.max_drawdown),
+  status: (backtest.status as StoredBacktest['status'] | undefined) ?? 'completed',
+  workflow_instance_id: typeof backtest.workflow_instance_id === 'string' ? backtest.workflow_instance_id : null,
+  error_message: typeof backtest.error_message === 'string' ? backtest.error_message : null,
   parameters: parseJsonField(backtest.parameters as StoredBacktest['parameters'] | string | undefined, {
     takeProfitLevel: 0,
     stopLossLevel: 0,
@@ -111,22 +116,43 @@ export async function listBacktestTrades(id: string): Promise<Trade[]> {
   return data.map(normalizeTrade);
 }
 
-export async function saveBacktestRun(payload: {
-  backtest: Omit<StoredBacktest, 'id' | 'created_at'>;
-  trades: Trade[];
+export async function queueBacktestRun(payload: {
+  backtest: Pick<StoredBacktest, 'symbol' | 'exchange' | 'strategy' | 'start_date' | 'end_date' | 'initial_balance' | 'parameters'>;
 }): Promise<StoredBacktest> {
   const data = await apiRequest<Record<string, unknown>>('/api/backtests', {
     method: 'POST',
     body: JSON.stringify({
       backtest: payload.backtest,
-      trades: payload.trades.map((trade) => ({
-        ...trade,
-        entryTime: trade.entryTime.toISOString(),
-        exitTime: trade.exitTime.toISOString(),
-      })),
     }),
   });
   return normalizeBacktest(data);
+}
+
+export async function waitForBacktestCompletion(
+  id: string,
+  options?: { intervalMs?: number; timeoutMs?: number },
+): Promise<StoredBacktest> {
+  const intervalMs = options?.intervalMs ?? 2000;
+  const timeoutMs = options?.timeoutMs ?? 10 * 60 * 1000;
+  const startedAt = Date.now();
+
+  for (;;) {
+    const backtest = await getBacktest(id);
+
+    if (backtest.status === 'completed') {
+      return backtest;
+    }
+
+    if (backtest.status === 'failed') {
+      throw new Error(backtest.error_message || 'Backtest workflow failed');
+    }
+
+    if (Date.now() - startedAt > timeoutMs) {
+      throw new Error('Backtest workflow timed out while waiting for completion');
+    }
+
+    await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
+  }
 }
 
 export async function listBots(): Promise<Bot[]> {
@@ -169,8 +195,18 @@ export async function fetchMarketTicks(params: {
   startDate: string;
   endDate: string;
   timeframe: string;
+  assetClass?: MarketAssetClass;
+  provider?: MarketDataProviderId;
 }): Promise<MarketTick[]> {
-  const searchParams = new URLSearchParams(params);
+  const searchParams = new URLSearchParams(
+    Object.entries(params).reduce<Record<string, string>>((accumulator, [key, value]) => {
+      if (value) {
+        accumulator[key] = value;
+      }
+
+      return accumulator;
+    }, {}),
+  );
   const data = await apiRequest<{ ticks: Array<Omit<MarketTick, 'timestamp'> & { timestamp: string }> }>(`/api/market-data/ticks?${searchParams.toString()}`);
   return data.ticks.map((tick) => ({
     ...tick,

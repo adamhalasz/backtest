@@ -2,7 +2,7 @@ import type { Context } from 'hono';
 import { getRequiredUser } from '../../auth/auth-middleware';
 import { AppError } from '../../lib/errors';
 import type { AppEnv } from '../../worker-types';
-import { backtestInsertSchema } from './backtests-schema';
+import { backtestRequestSchema } from './backtests-schema';
 import { createBacktest, getBacktest, getBacktestTrades, getBacktests } from './backtests-service';
 
 const getBacktestId = (c: Context<AppEnv>) => {
@@ -31,7 +31,7 @@ export const handleGetBacktestTrades = async (c: Context<AppEnv>) => {
 };
 
 export const handleCreateBacktest = async (c: Context<AppEnv>) => {
-  const parsed = backtestInsertSchema.safeParse(await c.req.json());
+  const parsed = backtestRequestSchema.safeParse(await c.req.json());
 
   if (!parsed.success) {
     throw new AppError('Invalid request body', 400, parsed.error.flatten());
@@ -39,5 +39,5 @@ export const handleCreateBacktest = async (c: Context<AppEnv>) => {
 
   const user = getRequiredUser(c.get('user'));
   const backtest = await createBacktest(c.env, user.id, parsed.data);
-  return c.json(backtest, 201);
+  return c.json(backtest, 202);
 };

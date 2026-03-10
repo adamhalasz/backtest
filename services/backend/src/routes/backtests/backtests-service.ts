@@ -1,12 +1,12 @@
 import { AppError } from '../../lib/errors';
 import type { BackendEnv } from '../../worker-types';
-import type { BacktestInsertInput } from './backtests-types';
+import type { BacktestRequestInput } from './backtests-types';
 import {
   findBacktestById,
   insertBacktest,
-  insertBacktestTrade,
   listBacktestsByUser,
   listTradesByBacktestId,
+  updateBacktestWorkflowInstanceById,
 } from './backtests-repository';
 
 export const getBacktests = (env: BackendEnv, userId: string) => {
@@ -28,16 +28,21 @@ export const getBacktestTrades = async (env: BackendEnv, backtestId: string, use
   return listTradesByBacktestId(env, backtestId, userId);
 };
 
-export const createBacktest = async (env: BackendEnv, userId: string, payload: BacktestInsertInput) => {
+export const createBacktest = async (env: BackendEnv, userId: string, payload: BacktestRequestInput) => {
+  if (!env.BACKTEST_WORKFLOW) {
+    throw new AppError('Backtest workflow binding is not configured', 500);
+  }
+
   const createdBacktest = await insertBacktest(env, userId, payload);
+  const instance = await env.BACKTEST_WORKFLOW.create({
+    id: createdBacktest.id,
+    params: { backtestId: createdBacktest.id },
+  });
+  const updatedBacktest = await updateBacktestWorkflowInstanceById(env, createdBacktest.id, instance.id);
 
-  await Promise.all(
-    payload.trades.map((trade) => insertBacktestTrade(env, {
-      backtestId: createdBacktest.id,
-      userId,
-      trade,
-    })),
-  );
+  if (!updatedBacktest) {
+    throw new AppError('Failed to queue backtest', 500);
+  }
 
-  return createdBacktest;
+  return updatedBacktest;
 };

@@ -2,3 +2,16 @@ DATABASE_URL=postgresql://username:password@host:5432/database
 BETTER_AUTH_SECRET=replace-with-a-random-32-byte-secret
 BETTER_AUTH_URL=http://localhost:8787
 FRONTEND_ORIGIN=http://localhost:5173
+INGESTION_ADMIN_SECRET=replace-with-a-local-admin-secret
+
+CLICKHOUSE_URL=https://twmmnt9hd1.us-east-1.aws.clickhouse.cloud:8443
+CLICKHOUSE_API_KEY=OGp9C1jxEMIb4McTsGz7
+CLICKHOUSE_API_SECRET=replace-with-api-secret
+CCXT_EXCHANGE=binance
+CCXT_DELAY_MS=1500
+CCXT_BATCH_COOLDOWN_MS=120000
+CCXT_MAX_RETRIES=3
+
+# Optional fallback for direct ClickHouse user/password auth instead of API credentials.
+# CLICKHOUSE_USERNAME=default
+# CLICKHOUSE_PASSWORD=replace-with-password

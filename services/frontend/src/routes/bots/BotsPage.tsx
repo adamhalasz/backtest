@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { Bot as BotIcon, Pause, Play, Plus, Settings, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EXCHANGES } from '@/lib/constants';
+import { MarketMetadataBadges } from '@/components/market/MarketMetadataBadges';
 import { useDeleteBot, useFetchBots, useUpdateBotStatus } from './bots-hooks';
 
 const formatCurrency = (value: number) => {
@@ -71,6 +72,9 @@ export function BotsPage() {
                     <p className="text-sm text-gray-600">
                       {bot.symbol} on {EXCHANGES.find((exchange) => exchange.id === bot.exchange)?.name || bot.exchange}
                     </p>
+                    <div className="mt-2">
+                      <MarketMetadataBadges exchange={bot.exchange} parameters={bot.parameters} symbol={bot.symbol} />
+                    </div>
                   </div>
                   <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
                     {bot.status}
