@@ -1,3 +1,10 @@
+---
+id: secrets
+slug: /secrets
+sidebar_label: Secrets
+description: GitHub Actions and deployment secret reference for Quantago.
+---
+
 # GitHub Secrets Quick Reference
 
 Copy and paste this checklist when setting up your repository secrets.

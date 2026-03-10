@@ -158,6 +158,7 @@ Whether you're a quantitative trader developing sophisticated strategies or a de
 ### Production Domains
 
 - Landing: https://quantago.co
+- Docs: https://docs.quantago.co
 - App: https://app.quantago.co
 - Admin: https://admin.quantago.co
 - API: https://api.quantago.co
@@ -211,12 +212,13 @@ Quantago is built as a serverless, edge-first application:
 - **PostgreSQL**: Metadata, user accounts, and backtest configuration
 - **ClickHouse**: High-performance time-series storage for OHLCV data
 
-For detailed architecture documentation, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+For detailed architecture documentation, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). The published documentation site is available at https://docs.quantago.co.
 
 ## 📖 Documentation
 
 | Document | Description |
 |----------|-------------|
+| [Live Docs](https://docs.quantago.co) | Published Docusaurus site for docs.quantago.co |
 | [Architecture](docs/ARCHITECTURE.md) | Comprehensive architecture overview with diagrams |
 | [Strategy Protocol](docs/STRATEGY_PROTOCOL.md) | Runtime-agnostic strategy contract for native, remote, and future WASM strategies |
 | [Deployment Guide](docs/DEPLOYMENT.md) | Step-by-step production deployment |
@@ -360,6 +362,7 @@ Built with amazing open-source technologies:
 - **Issues**: [GitHub Issues](https://github.com/yourusername/backtest/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/yourusername/backtest/discussions)
 - **Documentation**: [docs/](docs/)
+- **Published Docs**: https://docs.quantago.co
 
 ---
 

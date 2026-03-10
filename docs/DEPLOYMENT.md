@@ -1,3 +1,10 @@
+---
+id: deployment
+slug: /deployment
+sidebar_label: Deployment
+description: Production deployment guide for Quantago across Workers and Cloudflare Pages.
+---
+
 # Deployment Guide
 
 This document describes how to deploy Quantago to production using GitHub Actions and Cloudflare.
@@ -134,17 +141,23 @@ npx wrangler pages project create ${FRONTEND_PAGES_PROJECT:-quantago-app}
 cd ../admin
 pnpm build
 npx wrangler pages project create ${ADMIN_PAGES_PROJECT:-quantago-admin}
+
+# Create docs project
+cd ../docs
+pnpm build
+npx wrangler pages project create ${DOCS_PAGES_PROJECT:-quantago-docs}
 ```
 
-The GitHub Actions deploy workflow and local deploy scripts default to `quantago-app` and `quantago-admin`, but you can override them with `FRONTEND_PAGES_PROJECT` and `ADMIN_PAGES_PROJECT` when your Cloudflare account uses different Pages project names.
+The local deploy scripts default to `quantago-app`, `quantago-admin`, and `quantago-docs`, but you can override them with `FRONTEND_PAGES_PROJECT`, `ADMIN_PAGES_PROJECT`, and `DOCS_PAGES_PROJECT` when your Cloudflare account uses different Pages project names.
 
 ### Option 2: Via Cloudflare Dashboard
 
 1. Go to https://dash.cloudflare.com
 2. Select "Workers & Pages"
-3. Create two new Pages projects:
+3. Create three new Pages projects:
    - `quantago-app`
    - `quantago-admin`
+   - `quantago-docs`
 
 ## Custom Domains (Optional)
 
@@ -157,6 +170,7 @@ Add these DNS records in Cloudflare:
 | CNAME | `api` | `quantago-api.workers.dev` | Proxied |
 | CNAME | `app` | `quantago-app.pages.dev` | Proxied |
 | CNAME | `admin` | `quantago-admin.pages.dev` | Proxied |
+| CNAME | `docs` | `quantago-docs.pages.dev` | Proxied |
 | CNAME | `@` | `quantago-web.workers.dev` | Proxied |
 
 ### Configure Custom Domains
@@ -177,6 +191,11 @@ npx wrangler domains add api.quantago.co
 1. Go to Cloudflare Dashboard → Pages → quantago-admin
 2. Click "Custom domains"
 3. Add `admin.quantago.co`
+
+#### Docs Pages
+1. Go to Cloudflare Dashboard → Pages → quantago-docs
+2. Click "Custom domains"
+3. Add `docs.quantago.co`
 
 #### Landing Worker
 ```bash
@@ -209,7 +228,7 @@ npx wrangler secret put CLICKHOUSE_USERNAME
 npx wrangler secret put CLICKHOUSE_PASSWORD
 ```
 
-### Frontend/Admin Pages
+### Frontend/Admin/Docs Pages
 
 Environment variables are set in the build step via GitHub Actions.
 You can also set them in Cloudflare Dashboard → Pages → Settings → Environment variables.

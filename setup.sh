@@ -125,6 +125,13 @@ else
     echo -e "${GREEN}✓ Admin project exists${NC}"
 fi
 
+if ! npx wrangler pages project list 2>/dev/null | grep -q "quantago-docs"; then
+    echo "Creating docs project..."
+    npx wrangler pages project create quantago-docs --production-branch main || true
+else
+    echo -e "${GREEN}✓ Docs project exists${NC}"
+fi
+
 # Set backend secrets
 echo ""
 echo "🔑 Backend Worker secrets"
@@ -185,6 +192,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "  🔧 Backend: https://quantago-api.workers.dev"
     echo "  🌐 Frontend: https://quantago-app.pages.dev"
     echo "  👑 Admin: https://quantago-admin.pages.dev"
+    echo "  📚 Docs: https://quantago-docs.pages.dev"
     echo "  🏠 Landing: https://quantago-web.workers.dev"
     echo ""
     echo "Next steps:"

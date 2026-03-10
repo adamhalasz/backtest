@@ -1,3 +1,10 @@
+---
+id: backend-standards
+slug: /standards/backend
+sidebar_label: Backend Standards
+description: Backend conventions for Hono routes, workflows, data access, and auth.
+---
+
 # Backend Standards
 
 Standards for organizing **Cloudflare Workers** API routes, Workflows, Durable Objects, Neon database access, and BetterAuth authentication using Hono for routing.

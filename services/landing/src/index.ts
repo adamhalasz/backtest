@@ -76,42 +76,64 @@ const steps: LandingStep[] = [
 ];
 
 const benefits = [
-  'Write strategies in TypeScript — no Python, no proprietary scripting.',
+  'Use prebuilt strategies or write your own — no proprietary scripting required.',
   'Use prebuilt strategies without writing a single line of code.',
   'Run backtests in the cloud — no local setup needed.',
   'Share results with a link — not a screenshot.',
 ];
 
-const features = [
+const icps = [
   {
-    title: 'TypeScript-native strategies',
-    description: 'Write strategies in the language you already use every day — no Python, no Pine Script, no proprietary DSL.',
-    icon: 'code-2',
+    id: 'retail-traders',
+    name: 'Retail Traders',
+    tagline: 'Test ideas before going live',
+    title: 'Validate your strategy before risking real money',
+    description: 'You want to know if your trading idea actually works — without losing money finding out. Quantago runs any strategy against years of real market data so you can see returns, risks, and results before putting any capital on the line.',
+    features: [
+      { icon: 'play-circle', title: 'Start with prebuilt strategies', description: 'Choose from a library of ready-made strategies — no coding required. Pick one, set your parameters, and run.' },
+      { icon: 'bar-chart-2', title: 'Clear results at a glance', description: 'See total returns, win rate, and worst-case drawdown in one view. No spreadsheets, no guesswork.' },
+      { icon: 'shield', title: 'Risk-free experimentation', description: 'Every test uses historical price data. Explore ideas freely — your real account balance stays untouched.' },
+      { icon: 'share-2', title: 'Share with one link', description: 'Every backtest gets a shareable URL. Send your results to anyone — no exports or screenshots needed.' },
+    ],
   },
   {
-    title: 'Prebuilt strategy library',
-    description: 'Start testing immediately with ready-made strategies like Moving Average, RSI, Bollinger Bands, and more.',
-    icon: 'library',
+    id: 'algo-traders',
+    name: 'Algorithmic Traders',
+    tagline: 'Build, test, and iterate faster',
+    title: 'A TypeScript-native engine built for serious strategy work',
+    description: 'You write your own strategies and need a fast, reliable way to benchmark them. Quantago gives you a TypeScript-native backtesting engine, version tracking for every strategy, and cloud-powered runs so you can iterate without friction.',
+    features: [
+      { icon: 'code-2', title: 'TypeScript-native strategies', description: 'Write strategies in the language you use every day — no Python, no Pine Script, no proprietary DSL.' },
+      { icon: 'git-branch', title: 'Version history built in', description: 'See what changed from one version to the next and compare performance across all iterations.' },
+      { icon: 'cloud', title: 'Cloud-powered backtesting', description: 'Run tests on Cloudflare Workers — no local bottleneck. Results in seconds, not hours.' },
+      { icon: 'lock-open', title: 'Open source and auditable', description: 'Read, inspect, and extend the full engine. Self-host or use the hosted cloud — your choice.' },
+    ],
   },
   {
-    title: 'Cloud-powered backtesting',
-    description: 'Run backtests on Cloudflare Workers — no local machine bottleneck, results in seconds instead of hours.',
-    icon: 'cloud',
+    id: 'quant-researchers',
+    name: 'Quant Researchers',
+    tagline: 'Rigorous, reproducible results',
+    title: 'Validate market hypotheses with consistent infrastructure',
+    description: 'You study market patterns and need backtest results you can trust and reproduce. Quantago provides a consistent, open-source engine so your experiments are comparable, shareable, and built on real data.',
+    features: [
+      { icon: 'activity', title: 'Consistent test conditions', description: 'Every backtest runs on the same engine with the same data — eliminating inconsistency between experiments.' },
+      { icon: 'library', title: 'Prebuilt strategy baselines', description: 'Compare your hypotheses against well-known strategies like RSI, Bollinger Bands, and Moving Average.' },
+      { icon: 'git-branch', title: 'Strategy versioning', description: 'Track every modification and compare results across versions — essential for real research workflows.' },
+      { icon: 'share-2', title: 'Shareable experiment links', description: 'Every backtest gets a URL. Reference results in notes, reports, or team discussions without exports.' },
+    ],
   },
   {
-    title: 'Clear version history',
-    description: 'See which version performed better and what changed from one test to the next.',
-    icon: 'git-branch',
-  },
-  {
-    title: 'Open source',
-    description: 'Read, audit, and extend the full engine. Self-host or use the hosted cloud — your choice.',
-    icon: 'lock-open',
-  },
-  {
-    title: 'Shareable results',
-    description: 'Every backtest gets a URL. Share performance with collaborators, investors, or clients — no exports needed.',
-    icon: 'share-2',
+    id: 'fund-managers',
+    name: 'Portfolio Managers',
+    tagline: 'Make allocation decisions with data',
+    title: 'Know your risk before deploying capital',
+    description: 'Before committing capital to any strategy, you need evidence it holds up under real market conditions. Quantago gives you detailed backtest data — returns, drawdowns, and consistency — so every allocation decision is backed by facts, not guesswork.',
+    features: [
+      { icon: 'trending-up', title: 'Full performance breakdown', description: 'Total return, max drawdown, win rate, and trade count — all in one place for every strategy and version.' },
+      { icon: 'shield', title: 'Stress-test any conditions', description: 'Choose any historical period — bull runs, crashes, sideways markets — and see how a strategy holds up.' },
+      { icon: 'bar-chart-2', title: 'Compare strategies directly', description: 'Run multiple versions or different strategies and compare performance side by side.' },
+      { icon: 'share-2', title: 'Shareable results for review', description: 'Send a backtest link to your team or investment committee with one click — no extra tools needed.' },
+    ],
   },
 ];
 
@@ -351,6 +373,97 @@ const renderLanding = () => {
           color: var(--muted);
           font-size: 0.92rem;
         }
+        .hamburger {
+          display: none;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          border: 1px solid rgba(120, 53, 15, 0.12);
+          background: rgba(255,255,255,0.6);
+          cursor: pointer;
+          padding: 0;
+          color: var(--text);
+          flex-shrink: 0;
+        }
+        .hamburger svg { display: block; }
+        /* Mobile nav drawer */
+        .nav-sheet-backdrop {
+          display: block;
+          position: fixed;
+          inset: 0;
+          background: rgba(28, 25, 23, 0.36);
+          z-index: 99;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 240ms ease;
+        }
+        .nav-sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+        .nav-sheet {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: #faf8f5;
+          z-index: 100;
+          padding: 0;
+          box-shadow: 0 -8px 48px rgba(120, 53, 15, 0.14);
+          border-radius: 24px 24px 0 0;
+          transform: translateY(100%);
+          transition: transform 300ms cubic-bezier(0.32, 0, 0.15, 1);
+          display: flex;
+          flex-direction: column;
+        }
+        .nav-sheet.open { transform: translateY(0); }
+        .nav-sheet-handle {
+          width: 36px;
+          height: 4px;
+          border-radius: 999px;
+          background: rgba(120, 53, 15, 0.15);
+          margin: 12px auto 0;
+          flex-shrink: 0;
+        }
+        .nav-sheet-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 20px 14px;
+          border-bottom: 1px solid rgba(120, 53, 15, 0.08);
+        }
+        .nav-sheet-close {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          border: 1px solid rgba(120, 53, 15, 0.12);
+          background: transparent;
+          cursor: pointer;
+          padding: 0;
+          color: var(--muted);
+        }
+        .nav-sheet-links {
+          display: flex;
+          flex-direction: column;
+          padding: 10px 12px;
+          gap: 2px;
+        }
+        .nav-sheet-links a {
+          display: block;
+          padding: 14px 16px;
+          border-radius: 12px;
+          font-size: 1rem;
+          font-weight: 500;
+          color: var(--text);
+          transition: background 140ms ease;
+        }
+        .nav-sheet-links a:hover { background: rgba(217, 119, 6, 0.07); }
+        .nav-sheet-footer {
+          padding: 12px 20px 36px;
+          border-top: 1px solid rgba(120, 53, 15, 0.08);
+        }
         .button-row {
           display: flex;
           flex-wrap: wrap;
@@ -481,21 +594,21 @@ const renderLanding = () => {
           margin-top: 52px;
         }
         .laptop-bezel {
-          background: #1a1a1a;
-          border-radius: 14px 14px 0 0;
-          padding: 10px 10px 0;
-          box-shadow: 0 40px 80px rgba(120, 53, 15, 0.16), 0 8px 24px rgba(0,0,0,0.12);
+          background: #1e1e1e;
+          border-radius: 16px 16px 0 0;
+          padding: 12px 12px 0;
+          box-shadow: 0 40px 90px rgba(120, 53, 15, 0.18), 0 8px 24px rgba(0,0,0,0.14);
         }
         .laptop-cam {
           width: 6px;
           height: 6px;
           border-radius: 999px;
-          background: #333;
-          margin: 0 auto 8px;
+          background: #3a3a3a;
+          margin: 0 auto 10px;
         }
         .laptop-screen {
-          background: #fff;
-          border-radius: 4px 4px 0 0;
+          background: #faf8f5;
+          border-radius: 8px 8px 0 0;
           overflow: hidden;
           aspect-ratio: 16/10;
           display: flex;
@@ -524,22 +637,23 @@ const renderLanding = () => {
           font-family: 'Host Grotesk', sans-serif;
           font-size: 11px;
           color: #1e293b;
-          background: #ffffff;
+          background: #faf8f5;
         }
         .app-sidebar {
-          width: 46px;
-          background: #0f172a;
+          width: 54px;
+          background: #faf8f5;
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 10px 0;
-          gap: 4px;
+          padding: 12px 0;
+          gap: 2px;
           flex-shrink: 0;
+          border-right: 1px solid rgba(28,25,23,0.08);
         }
         .app-sidebar-logo {
-          width: 26px;
-          height: 26px;
-          margin-bottom: 10px;
+          width: 28px;
+          height: 28px;
+          margin-bottom: 14px;
         }
         .app-sidebar-logo img {
           width: 100%;
@@ -547,28 +661,26 @@ const renderLanding = () => {
           display: block;
         }
         .app-nav-dot {
-          width: 30px;
-          height: 30px;
-          border-radius: 7px;
+          width: 36px;
+          height: 34px;
+          border-radius: 9px;
           display: grid;
           place-items: center;
+          color: rgba(28,25,23,0.32);
+          transition: background 140ms ease, color 140ms ease;
         }
         .app-nav-dot.active {
-          background: rgba(255,255,255,0.1);
+          background: rgba(217,119,6,0.10);
+          color: #d97706;
         }
-        .app-nav-icon {
-          width: 14px;
-          height: 14px;
-          border-radius: 3px;
-          background: #475569;
-        }
-        .app-nav-dot.active .app-nav-icon {
-          background: #e2e8f0;
-        }
+        .app-nav-dot svg { display: block; }
         .app-content {
           flex: 1;
           padding: 16px 22px;
           overflow: hidden;
+          background: #ffffff;
+          border-radius: 12px 0 0 0;
+          margin: 8px 0 0 0;
         }
         .app-topbar {
           display: flex;
@@ -680,6 +792,7 @@ const renderLanding = () => {
           border: 1px solid rgba(255,255,255,0.74);
           box-shadow: 0 18px 48px rgba(24, 35, 48, 0.08);
           align-items: center;
+          overflow: hidden;
         }
         .workflow-card.reverse .workflow-copy { order: 2; }
         .workflow-card.reverse .workflow-media { order: 1; }
@@ -1007,6 +1120,99 @@ const renderLanding = () => {
         .feature strong { display: block; margin-bottom: 10px; font-size: 1.12rem; }
         .benefit p,
         .feature p { margin: 0; color: var(--muted); line-height: 1.7; }
+        /* ICP "Who is it for" layout */
+        .icp-layout {
+          display: grid;
+          grid-template-columns: 240px 1fr;
+          gap: 28px;
+          align-items: start;
+        }
+        .icp-nav {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          position: sticky;
+          top: 24px;
+        }
+        .icp-tab {
+          display: block;
+          width: 100%;
+          padding: 16px 20px;
+          border-radius: var(--radius-lg);
+          background: rgba(255, 255, 255, 0.5);
+          border: 1px solid rgba(120, 53, 15, 0.08);
+          cursor: pointer;
+          text-align: left;
+          transition: all 160ms ease;
+          font-family: 'Host Grotesk', sans-serif;
+          color: var(--text);
+        }
+        .icp-tab:hover {
+          background: rgba(255, 255, 255, 0.78);
+          transform: translateX(3px);
+        }
+        .icp-tab.active {
+          background: rgba(255, 255, 255, 0.9);
+          border-color: var(--brand);
+          box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1), 0 8px 24px rgba(120, 53, 15, 0.08);
+        }
+        .icp-tab-name {
+          display: block;
+          font-weight: 700;
+          font-size: 0.95rem;
+          color: var(--text);
+          margin-bottom: 4px;
+          transition: color 160ms ease;
+        }
+        .icp-tab.active .icp-tab-name { color: var(--brand); }
+        .icp-tab-tagline {
+          display: block;
+          font-size: 0.82rem;
+          color: var(--muted);
+          line-height: 1.4;
+        }
+        .icp-panel { display: none; }
+        .icp-panel.active { display: block; }
+        .icp-panel-title {
+          font-family: 'Host Grotesk', sans-serif;
+          font-size: clamp(1.5rem, 2.4vw, 2rem);
+          font-weight: 700;
+          letter-spacing: -0.03em;
+          margin: 0 0 14px;
+          line-height: 1.15;
+        }
+        .icp-panel-desc {
+          color: var(--muted);
+          line-height: 1.8;
+          margin: 0 0 26px;
+        }
+        .icp-content-container {
+          background: rgba(255, 255, 255, 0.72);
+          border: 1px solid rgba(255, 255, 255, 0.84);
+          border-radius: var(--radius-xl);
+          padding: 32px;
+          box-shadow: 0 18px 52px rgba(120, 53, 15, 0.07);
+        }
+        .icp-features-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 0;
+        }
+        .icp-feature {
+          display: flex;
+          gap: 16px;
+          align-items: flex-start;
+          padding: 20px 0;
+          border-top: 1px solid rgba(120, 53, 15, 0.07);
+          background: none;
+          border-radius: 0;
+          box-shadow: none;
+        }
+        .icp-feature:first-child { border-top: none; padding-top: 4px; }
+        .icp-feature .feature-icon { flex-shrink: 0; margin-bottom: 0; }
+        .icp-feature-body { flex: 1; }
+        .icp-feature strong { display: block; margin-bottom: 6px; font-size: 0.95rem; }
+        .icp-feature p { margin: 0; color: var(--muted); line-height: 1.7; font-size: 0.88rem; }
         .cta {
           padding: 34px;
           border-radius: var(--radius-xl);
@@ -1068,6 +1274,16 @@ const renderLanding = () => {
           .app-row-name { font-size: 8px; }
           .app-badge { font-size: 7px; }
           .app-metric { font-size: 8px; min-width: 36px; }
+          .nav-links { display: none; }
+          .hamburger { display: flex; }
+          .nav { flex-direction: row; align-items: center; gap: 0; }
+          .workflow-media { display: none; }
+          .workflow-card { grid-template-columns: 1fr; }
+          .icp-layout { grid-template-columns: 1fr; }
+          .icp-nav { position: static; flex-direction: row; flex-wrap: wrap; }
+          .icp-tab { width: auto; padding: 10px 16px; }
+          .icp-tab-tagline { display: none; }
+          .icp-content-container { padding: 20px 18px; }
         }
       </style>
     </head>
@@ -1081,17 +1297,50 @@ const renderLanding = () => {
           <nav class="nav-links">
             <a href="#how-it-works">How it works</a>
             <a href="#benefits">Benefits</a>
-            <a href="#features">Features</a>
+            <a href="#who-its-for">Who it's for</a>
             <a href="${githubUrl}">GitHub</a>
           </nav>
+          <button class="hamburger" id="nav-hamburger" aria-label="Open menu" onclick="openNavSheet()">
+            <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect y="0" width="18" height="2" rx="1" fill="currentColor"/>
+              <rect y="6" width="18" height="2" rx="1" fill="currentColor"/>
+              <rect y="12" width="18" height="2" rx="1" fill="currentColor"/>
+            </svg>
+          </button>
         </header>
+
+        <!-- Mobile nav sheet -->
+        <div class="nav-sheet-backdrop" id="nav-backdrop" onclick="closeNavSheet()"></div>
+        <div class="nav-sheet" id="nav-sheet" role="dialog" aria-modal="true" aria-label="Navigation menu">
+          <div class="nav-sheet-handle"></div>
+          <div class="nav-sheet-header">
+            <a class="brand" href="/" onclick="closeNavSheet()">
+              <span class="brand-mark"><img src="${quantagoLogoPng}" alt="Quantago" /></span>
+              <span>QUANTAGO</span>
+            </a>
+            <button class="nav-sheet-close" aria-label="Close menu" onclick="closeNavSheet()">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <nav class="nav-sheet-links">
+            <a href="#how-it-works" onclick="closeNavSheet()">How it works</a>
+            <a href="#benefits" onclick="closeNavSheet()">Benefits</a>
+            <a href="#who-its-for" onclick="closeNavSheet()">Who it's for</a>
+            <a href="${githubUrl}" onclick="closeNavSheet()">GitHub</a>
+          </nav>
+          <div class="nav-sheet-footer">
+            <a class="button primary" href="${githubUrl}" style="width:100%;border-radius:14px;">View on GitHub</a>
+          </div>
+        </div>
 
         <main>
           <section class="hero">
             <div class="hero-text">
-              <div class="eyebrow">Open-source backtesting engine — TypeScript-native</div>
+              <div class="eyebrow">Open-source backtesting engine for traders</div>
               <h1>Backtest trading strategies before risking real money.</h1>
-              <p>Write strategies in TypeScript or start with prebuilt ones. Test them against real historical market data and see how they would have performed — before putting real capital on the line.</p>
+              <p>Pick a strategy, test it against years of real historical market data, and see how it would have performed — before putting any real capital on the line. No coding required to get started.</p>
               <div class="button-row" style="margin-top: 28px;">
                 <a class="button primary" href="${githubUrl}">View on GitHub</a>
                 <a class="button secondary" href="#how-it-works">How It Works</a>
@@ -1104,9 +1353,15 @@ const renderLanding = () => {
                   <div class="app-mockup">
                     <div class="app-sidebar">
                       <div class="app-sidebar-logo"><img src="${quantagoLogoPng}" alt="" /></div>
-                      <div class="app-nav-dot active"><div class="app-nav-icon"></div></div>
-                      <div class="app-nav-dot"><div class="app-nav-icon"></div></div>
-                      <div class="app-nav-dot"><div class="app-nav-icon"></div></div>
+                      <div class="app-nav-dot active">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                      </div>
+                      <div class="app-nav-dot">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                      </div>
+                      <div class="app-nav-dot">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      </div>
                     </div>
                     <div class="app-content">
                       <div class="app-topbar">
@@ -1218,28 +1473,48 @@ const renderLanding = () => {
             </div>
           </section>
 
-          <section id="features">
+          <section id="who-its-for">
             <div class="section-head">
-              <h2>Features</h2>
-              <p>Everything you need to go from strategy idea to tested results.</p>
+              <h2>Who is it for?</h2>
+              <p>Quantago is built for anyone who wants to validate a trading strategy before putting real capital at risk — from retail traders testing a new idea to quant developers building systematic strategies.</p>
             </div>
-            <div class="feature-grid">
-              ${features
-                .map((feature) => `
-                  <article class="feature">
-                    <div class="feature-icon"><i data-lucide="${escapeHtml(feature.icon)}"></i></div>
-                    <strong>${escapeHtml(feature.title)}</strong>
-                    <p>${escapeHtml(feature.description)}</p>
-                  </article>
-                `)
-                .join('')}
+            <div class="icp-layout">
+              <div class="icp-nav">
+                ${icps.map((icp, i) => `
+                  <button class="icp-tab${i === 0 ? ' active' : ''}" data-icp="${i}" onclick="selectIcp(${i})" type="button">
+                    <span class="icp-tab-name">${escapeHtml(icp.name)}</span>
+                    <span class="icp-tab-tagline">${escapeHtml(icp.tagline)}</span>
+                  </button>
+                `).join('')}
+              </div>
+              <div class="icp-panels">
+                ${icps.map((icp, i) => `
+                  <div class="icp-panel${i === 0 ? ' active' : ''}" id="icp-panel-${i}">
+                    <div class="icp-content-container">
+                      <h3 class="icp-panel-title">${escapeHtml(icp.title)}</h3>
+                      <p class="icp-panel-desc">${escapeHtml(icp.description)}</p>
+                      <div class="icp-features-grid">
+                        ${icp.features.map(f => `
+                          <article class="icp-feature">
+                            <div class="feature-icon"><i data-lucide="${escapeHtml(f.icon)}"></i></div>
+                            <div class="icp-feature-body">
+                              <strong>${escapeHtml(f.title)}</strong>
+                              <p>${escapeHtml(f.description)}</p>
+                            </div>
+                          </article>
+                        `).join('')}
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
             </div>
           </section>
         </main>
 
         <footer>
           <div class="footer-bar">
-            <div>Quantago by Aimform Kft</div>
+            <div>© 2026 Quantago. All rights reserved.</div>
             <div class="footer-links">
               <a href="/privacy">Privacy</a>
               <a href="/terms">Terms</a>
@@ -1248,12 +1523,40 @@ const renderLanding = () => {
         </footer>
       </div>
       <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
-      <script>lucide.createIcons();</script>
+      <script>
+        lucide.createIcons();
+        function selectIcp(index) {
+          document.querySelectorAll('.icp-tab').forEach(function(tab, i) {
+            tab.classList.toggle('active', i === index);
+          });
+          document.querySelectorAll('.icp-panel').forEach(function(panel, i) {
+            panel.classList.toggle('active', i === index);
+          });
+          lucide.createIcons();
+        }
+        function openNavSheet() {
+          var sheet = document.getElementById('nav-sheet');
+          var backdrop = document.getElementById('nav-backdrop');
+          sheet.classList.add('open');
+          backdrop.classList.add('open');
+          document.body.style.overflow = 'hidden';
+        }
+        function closeNavSheet() {
+          var sheet = document.getElementById('nav-sheet');
+          var backdrop = document.getElementById('nav-backdrop');
+          sheet.classList.remove('open');
+          backdrop.classList.remove('open');
+          document.body.style.overflow = '';
+        }
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape') closeNavSheet();
+        });
+      </script>
     </body>
   </html>`;
 };
 
-const renderLegalPage = (title: string, body: string) => {
+const renderLegalPage = (title: string, bodyHtml: string) => {
   return `<!DOCTYPE html>
   <html lang="en">
     <head>
@@ -1261,12 +1564,20 @@ const renderLegalPage = (title: string, body: string) => {
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>${escapeHtml(title)} | Quantago</title>
       <style>
-        body { margin: 0; font-family: 'Host Grotesk', sans-serif; background: #f8f4ec; color: #162233; }
-        main { width: min(calc(100% - 32px), 840px); margin: 0 auto; padding: 56px 0 80px; }
+        body { margin: 0; font-family: 'Host Grotesk', sans-serif; background: #faf8f5; color: #1c1917; }
+        main { width: min(calc(100% - 32px), 760px); margin: 0 auto; padding: 56px 0 80px; }
         a { color: #d97706; text-decoration: none; }
-        .card { background: rgba(255,255,255,0.76); border: 1px solid rgba(22,34,51,0.08); border-radius: 28px; padding: 32px; box-shadow: 0 20px 60px rgba(22,34,51,0.08); }
-        h1 { margin-top: 0; font-size: 2.6rem; letter-spacing: -0.05em; }
-        p { color: #4e5967; line-height: 1.8; }
+        .back { font-size: 0.875rem; color: #78716c; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 32px; }
+        .back:hover { color: #d97706; }
+        .card { background: #fff; border: 1px solid rgba(28,25,23,0.08); border-radius: 20px; padding: 40px 48px 48px; box-shadow: 0 4px 24px rgba(28,25,23,0.06); }
+        h1 { margin: 0 0 6px; font-size: 2rem; letter-spacing: -0.04em; color: #1c1917; }
+        .effective { font-size: 0.85rem; color: #78716c; margin: 0 0 32px; }
+        h2 { font-size: 1rem; font-weight: 700; color: #1c1917; margin: 28px 0 8px; }
+        p, li { color: #57534e; line-height: 1.75; font-size: 0.9375rem; }
+        ul { padding-left: 20px; margin: 8px 0 0; }
+        li { margin-bottom: 4px; }
+        .divider { border: none; border-top: 1px solid rgba(28,25,23,0.08); margin: 32px 0; }
+        @media (max-width: 600px) { .card { padding: 28px 22px 36px; } }
       </style>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1274,12 +1585,11 @@ const renderLegalPage = (title: string, body: string) => {
     </head>
     <body>
       <main>
-        <div class="card">
-          <a href="/">Back to Quantago</a>
-          <h1>${escapeHtml(title)}</h1>
-          <p>${escapeHtml(body)}</p>
-          <p>Company: Aimform Kft</p>
-        </div>
+        <a href="/" class="back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Back to Quantago
+        </a>
+        <div class="card">${bodyHtml}</div>
       </main>
     </body>
   </html>`;
@@ -1300,15 +1610,109 @@ export default {
 
     if (url.pathname === '/privacy') {
       return htmlResponse(renderLegalPage(
-        'Privacy',
-        'Quantago collects only the data required to operate authenticated backtesting, strategy registry, and operational monitoring features. Contact support before publishing any regulated or sensitive data through the platform.',
+        'Privacy Policy',
+        `
+          <h1>Privacy Policy</h1>
+          <p class="effective">Effective date: March 11, 2026</p>
+
+          <h2>1. Information We Collect</h2>
+          <p>We collect information you provide directly when you create an account or use the platform, including:</p>
+          <ul>
+            <li>Account details (email address, name)</li>
+            <li>Strategy code and backtest configurations you upload or create</li>
+            <li>API keys and integration credentials you supply</li>
+          </ul>
+          <p>We also collect usage and technical data automatically, including IP addresses, browser type, device identifiers, and timestamps of platform interactions.</p>
+
+          <h2>2. How We Use Your Information</h2>
+          <p>We use collected data solely to:</p>
+          <ul>
+            <li>Authenticate users and protect account security</li>
+            <li>Execute, store, and display backtest results</li>
+            <li>Provide performance analytics and strategy registry features</li>
+            <li>Monitor and improve platform reliability and performance</li>
+            <li>Send service-related notifications (e.g. backtest completion, billing)</li>
+          </ul>
+          <p>We do not sell, rent, or share your personal data with third parties for marketing purposes.</p>
+
+          <h2>3. Data Storage and Security</h2>
+          <p>All data is stored on Cloudflare infrastructure within the European Economic Area and the United States. We apply industry-standard security measures, including TLS encryption in transit and encryption at rest. Strategy code and backtest results are isolated per account and are not accessible to other users.</p>
+
+          <h2>4. Third-Party Services</h2>
+          <p>We use the following third-party services to operate the platform:</p>
+          <ul>
+            <li><strong>Cloudflare Workers &amp; D1</strong> — compute and database infrastructure</li>
+            <li><strong>Cloudflare R2</strong> — file and artifact storage</li>
+          </ul>
+          <p>These providers are contractually obligated to handle data securely and in compliance with applicable data protection law.</p>
+
+          <h2>5. Data Retention</h2>
+          <p>We retain your data for as long as your account is active. If you delete your account, all stored strategies, backtest history, and personal information are permanently removed within 30 days.</p>
+
+          <h2>6. Your Rights</h2>
+          <p>Depending on your jurisdiction, you may have the right to access, correct, export, or erase your personal data. To exercise any of these rights, contact us at the address below. We will respond within 30 days.</p>
+
+          <h2>7. Cookies</h2>
+          <p>We use only strictly necessary session cookies for authentication. We do not use tracking or advertising cookies.</p>
+
+          <hr class="divider" />
+          <h2>Contact</h2>
+          <p>For privacy inquiries, email us at <a href="mailto:privacy@quantago.com">privacy@quantago.com</a>.</p>
+        `,
       ));
     }
 
     if (url.pathname === '/terms') {
       return htmlResponse(renderLegalPage(
-        'Terms',
-        'Quantago is provided as software and infrastructure for strategy research and operations. Users remain responsible for trading decisions, external integrations, and compliance with any market, jurisdiction, or data licensing obligations.',
+        'Terms of Use',
+        `
+          <h1>Terms of Use</h1>
+          <p class="effective">Effective date: March 11, 2026</p>
+
+          <h2>1. Acceptance of Terms</h2>
+          <p>By accessing or using Quantago ("the Platform"), you agree to be bound by these Terms of Use. If you do not agree to all terms, you may not access or use the Platform.</p>
+
+          <h2>2. Description of Service</h2>
+          <p>Quantago provides software infrastructure for backtesting algorithmic trading strategies, managing a strategy registry, and viewing performance analytics. The Platform is a research and operational tool — it does not provide financial advice, brokerage services, or regulated investment services of any kind.</p>
+
+          <h2>3. Eligibility</h2>
+          <p>You must be at least 18 years old and have the legal capacity to enter into a binding agreement to use the Platform. By using Quantago, you represent that you meet these requirements.</p>
+
+          <h2>4. User Responsibilities</h2>
+          <p>You are solely responsible for:</p>
+          <ul>
+            <li>All trading decisions made based on backtest results or strategy outputs</li>
+            <li>Ensuring your use of the Platform complies with applicable laws in your jurisdiction, including securities and market regulations</li>
+            <li>The security of your account credentials and API keys</li>
+            <li>Any third-party data licensing obligations for market data you supply to the Platform</li>
+            <li>Not uploading malicious code, attempting to disrupt service, or accessing other users' data</li>
+          </ul>
+
+          <h2>5. No Financial Advice</h2>
+          <p>Nothing on the Platform constitutes financial, investment, legal, or tax advice. Past backtest performance is not indicative of future results. All strategy testing is hypothetical and subject to the limitations of backtesting methodology.</p>
+
+          <h2>6. Intellectual Property</h2>
+          <p>The Platform, including all software, design, and documentation, is owned by Quantago and protected by intellectual property law. Your strategy code remains your property. By uploading strategy code you grant Quantago a limited licence to execute it on your behalf within the Platform.</p>
+
+          <h2>7. Limitation of Liability</h2>
+          <p>To the maximum extent permitted by law, Quantago and its operators shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including trading losses, loss of data, or loss of profits, arising from your use of or inability to use the Platform.</p>
+
+          <h2>8. Disclaimer of Warranties</h2>
+          <p>The Platform is provided "as is" and "as available" without warranty of any kind. We do not warrant that backtest results are accurate, complete, or free from error.</p>
+
+          <h2>9. Termination</h2>
+          <p>We reserve the right to suspend or terminate your account at any time for violations of these Terms or for any conduct we determine to be harmful to the Platform or other users.</p>
+
+          <h2>10. Changes to Terms</h2>
+          <p>We may update these Terms from time to time. We will notify you of material changes via email or a prominent notice on the Platform. Continued use after the effective date constitutes acceptance of the updated Terms.</p>
+
+          <h2>11. Governing Law</h2>
+          <p>These Terms shall be governed by the laws of Hungary, without regard to conflict of law provisions. Any disputes shall be subject to the exclusive jurisdiction of the courts of Budapest, Hungary.</p>
+
+          <hr class="divider" />
+          <h2>Contact</h2>
+          <p>For questions about these Terms, email us at <a href="mailto:legal@quantago.com">legal@quantago.com</a>.</p>
+        `,
       ));
     }
 

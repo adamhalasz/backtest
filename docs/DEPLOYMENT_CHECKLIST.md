@@ -1,3 +1,10 @@
+---
+id: deployment-checklist
+slug: /deployment-checklist
+sidebar_label: Deployment Checklist
+description: Preflight checklist for deploying Quantago to production.
+---
+
 # Deployment Checklist
 
 Use this checklist before and during deployment.
@@ -76,12 +83,14 @@ Set these with `cd services/backend && wrangler secret put SECRET_NAME`:
 - [ ] Deploy frontend: `cd services/frontend && npx wrangler pages deploy dist --project-name=quantago-app`
 - [ ] Build admin: `cd services/admin && pnpm build`
 - [ ] Deploy admin: `cd services/admin && npx wrangler pages deploy dist --project-name=quantago-admin`
+- [ ] Build docs: `cd services/docs && pnpm build`
+- [ ] Deploy docs: `cd services/docs && npx wrangler pages deploy build --project-name=quantago-docs`
 - [ ] Deploy landing: `cd services/landing && npx wrangler deploy`
 
 Or use the convenience script: `pnpm run deploy:all`
 
 ### Option 3: GitHub Actions
-- [ ] Set all GitHub secrets (see [docs/SECRETS.md](SECRETS.md))
+- [ ] Set all GitHub secrets (see [GitHub Secrets Quick Reference](./secrets))
 - [ ] Push to main branch
 - [ ] Monitor GitHub Actions workflow
 - [ ] Verify deployment succeeded
@@ -92,6 +101,7 @@ Or use the convenience script: `pnpm run deploy:all`
 - [ ] Backend health check: `curl https://api.yourdomain.com/api/health`
 - [ ] Frontend loads: https://app.quantago.co
 - [ ] Admin login works: https://admin.quantago.co
+- [ ] Docs load: https://docs.quantago.co
 - [ ] Landing loads: https://quantago.co
 - [ ] Test authentication flow
 - [ ] Test admin ingestion trigger
@@ -107,6 +117,7 @@ UPDATE "user" SET role = 'admin' WHERE email = 'your-email@example.com';
 - [ ] Add custom domain to backend worker
 - [ ] Add custom domain to frontend Pages
 - [ ] Add custom domain to admin Pages
+- [ ] Add custom domain to docs Pages
 - [ ] Verify SSL certificates provisioned
 - [ ] Update CORS and auth URLs
 

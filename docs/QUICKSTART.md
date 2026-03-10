@@ -1,3 +1,10 @@
+---
+id: quickstart
+slug: /quickstart
+sidebar_label: Quick Start
+description: Fast-track setup and deployment guide for Quantago.
+---
+
 # Quick Start Guide
 
 ## Deploy to Production
@@ -62,11 +69,12 @@ This will execute deployment scripts located in `scripts/` directory:
 - `deploy-backend.sh` - Deploys the Worker API
 - `deploy-frontend.sh` - Builds and deploys the frontend to Pages
 - `deploy-admin.sh` - Builds and deploys the admin dashboard to Pages
+- `deploy-docs.sh` - Builds and deploys the documentation site to Pages
 - `deploy-landing.sh` - Deploys the SSR landing site to the apex domain
 
 ### Option 3: GitHub Actions
 
-1. Set GitHub Secrets (see [docs/SECRETS.md](SECRETS.md))
+1. Set GitHub Secrets (see [GitHub Secrets Quick Reference](./secrets))
 2. Push to `main` branch
 3. GitHub Actions will automatically deploy
 
@@ -84,6 +92,10 @@ This will execute deployment scripts located in `scripts/` directory:
 ### Admin Pages
 - **Admin dashboard**: Ingestion management
 - **URL**: `quantago-admin.pages.dev`
+
+### Docs Pages
+- **Documentation site**: Product, deployment, and strategy references
+- **URL**: `quantago-docs.pages.dev`
 
 ### Landing Worker
 - **Marketing site**: Quantago landing page and legal links
@@ -114,6 +126,7 @@ After deployment, add custom domains in Cloudflare Dashboard:
 - `api.yourdomain.com` → Backend Worker
 - `app.quantago.co` → Frontend Pages
 - `admin.quantago.co` → Admin Pages
+- `docs.quantago.co` → Docs Pages
 - `quantago.co` → Landing Worker
 
 ## ClickHouse Setup
@@ -148,10 +161,10 @@ VALUES (
 
 ## Documentation
 
-- **Deployment Guide**: [docs/DEPLOYMENT.md](DEPLOYMENT.md)
-- **GitHub Secrets**: [docs/SECRETS.md](SECRETS.md)
-- **Infrastructure**: [infra/README.md](../infra/README.md)
-- **Root README**: [README.md](../README.md)
+- **Deployment Guide**: [Deployment Guide](./deployment)
+- **GitHub Secrets**: [GitHub Secrets Quick Reference](./secrets)
+- **Infrastructure**: [infra/README.md](https://github.com/adamhalasz/backtest/blob/main/infra/README.md)
+- **Root README**: [README.md](https://github.com/adamhalasz/backtest/blob/main/README.md)
 
 ## Commands
 
@@ -172,6 +185,7 @@ pnpm run deploy:all
 pnpm deploy:backend
 pnpm deploy:frontend
 pnpm deploy:admin
+pnpm deploy:docs
 pnpm deploy:landing
 ```
 

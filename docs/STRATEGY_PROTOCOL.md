@@ -1,3 +1,10 @@
+---
+id: strategy-protocol
+slug: /strategy-protocol
+sidebar_label: Strategy Protocol
+description: Runtime-agnostic contract for Quantago strategies across native and remote execution.
+---
+
 # Strategy Protocol
 
 This document defines the contract between the platform and a trading strategy. The goal is to keep strategy code decoupled from the execution runtime so TypeScript, Python, Rust, Go, and future languages can all behave like first-class citizens.

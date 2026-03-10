@@ -1,3 +1,10 @@
+---
+id: architecture
+slug: /architecture
+sidebar_label: Architecture
+description: System architecture, data flow, and infrastructure design for Quantago.
+---
+
 # Architecture
 
 This document provides a comprehensive overview of the Quantago architecture, including system design, data flows, and infrastructure components.
@@ -437,7 +444,7 @@ Strategies no longer need to be coupled to the platform runtime. The platform ev
 - `remote`: HTTP call to an external strategy service
 - `wasm`: reserved for future high-performance strategy execution
 
-See [docs/STRATEGY_PROTOCOL.md](docs/STRATEGY_PROTOCOL.md) for the full request and response contract.
+See [Strategy Protocol](./strategy-protocol) for the full request and response contract.
 
 ## Strategy Protocol
 
@@ -684,9 +691,9 @@ Response:
 ### Coding Standards
 
 See:
-- [Backend Standards](standards/backend-standards.md)
-- [Component Standards](standards/component-standards.md)
-- [Zustand Standards](standards/zustand-standards.md)
+- [Backend Standards](./standards/backend)
+- [Component Standards](./standards/components)
+- [Zustand Standards](./standards/zustand)
 
 ## Future Enhancements
 

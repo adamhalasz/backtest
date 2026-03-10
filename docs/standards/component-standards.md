@@ -1,3 +1,10 @@
+---
+id: component-standards
+slug: /standards/components
+sidebar_label: Component Standards
+description: Frontend component and route organization standards for Quantago.
+---
+
 Here are the updated standards with testing fully integrated:
 
 ---
