@@ -55,11 +55,22 @@ jobs:
       - name: Build admin
         run: cd services/admin && pnpm build
       
-      - name: Run tests
+      - name: Run backend tests
         run: |
           if [ -f "services/backend/package.json" ] && grep -q '"test"' services/backend/package.json; then
-            cd services/backend && pnpm test
+            pnpm --dir services/backend test
           fi
+
+      - name: Run frontend tests with coverage
+        run: |
           if [ -f "services/frontend/package.json" ] && grep -q '"test"' services/frontend/package.json; then
-            cd services/frontend && pnpm test
+            pnpm --dir services/frontend test:coverage
           fi
+
+      - name: Upload coverage reports to Codecov
+        if: ${{ secrets.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./services/frontend/coverage/lcov.info
+          flags: frontend
