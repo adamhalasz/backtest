@@ -180,9 +180,17 @@ jobs:
           node <<'EOF'
           const fs = require('node:fs');
 
+          function parseJsonc(text) {
+            return JSON.parse(
+              text
+                .replace(/\/\*[\s\S]*?\*\//g, '')
+                .replace(/^\s*\/\/.*$/gm, ''),
+            );
+          }
+
           const configPath = 'services/backend/wrangler.jsonc';
           const outputPath = 'services/backend/wrangler.production.jsonc';
-          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          const config = parseJsonc(fs.readFileSync(configPath, 'utf8'));
 
           config.vars = {
             ...(config.vars || {}),
@@ -265,12 +273,21 @@ jobs:
         run: pnpm --filter @quantago/frontend build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
+
+      - name: Ensure frontend Pages project exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+          FRONTEND_PAGES_PROJECT: ${{ vars.FRONTEND_PAGES_PROJECT || 'quantago-app' }}
+        run: |
+          pnpm --dir services/frontend exec wrangler pages project create "$FRONTEND_PAGES_PROJECT" --production-branch main || true
       
       - name: Deploy to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm --dir services/frontend exec wrangler pages deploy dist --project-name=quantago-app
+          FRONTEND_PAGES_PROJECT: ${{ vars.FRONTEND_PAGES_PROJECT || 'quantago-app' }}
+        run: pnpm --dir services/frontend exec wrangler pages deploy dist --project-name="$FRONTEND_PAGES_PROJECT"
 
   # ============================================================================
   # Deploy Admin Pages
@@ -322,12 +339,21 @@ jobs:
         run: pnpm --filter @quantago/admin build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
+
+      - name: Ensure admin Pages project exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+          ADMIN_PAGES_PROJECT: ${{ vars.ADMIN_PAGES_PROJECT || 'quantago-admin' }}
+        run: |
+          pnpm --dir services/admin exec wrangler pages project create "$ADMIN_PAGES_PROJECT" --production-branch main || true
       
       - name: Deploy to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm --dir services/admin exec wrangler pages deploy dist --project-name=quantago-admin
+          ADMIN_PAGES_PROJECT: ${{ vars.ADMIN_PAGES_PROJECT || 'quantago-admin' }}
+        run: pnpm --dir services/admin exec wrangler pages deploy dist --project-name="$ADMIN_PAGES_PROJECT"
 
   # ============================================================================
   # Deploy Landing Worker

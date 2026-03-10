@@ -128,13 +128,15 @@ Before the first deployment, you need to create Pages projects:
 # Create frontend project
 cd services/frontend
 pnpm build
-npx wrangler pages project create quantago-app
+npx wrangler pages project create ${FRONTEND_PAGES_PROJECT:-quantago-app}
 
 # Create admin project
 cd ../admin
 pnpm build
-npx wrangler pages project create quantago-admin
+npx wrangler pages project create ${ADMIN_PAGES_PROJECT:-quantago-admin}
 ```
+
+The GitHub Actions deploy workflow and local deploy scripts default to `quantago-app` and `quantago-admin`, but you can override them with `FRONTEND_PAGES_PROJECT` and `ADMIN_PAGES_PROJECT` when your Cloudflare account uses different Pages project names.
 
 ### Option 2: Via Cloudflare Dashboard
 
