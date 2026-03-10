@@ -3,14 +3,15 @@ import { createAuth } from './auth-config';
 import { getAuthBaseUrl } from './auth-env';
 import type { AppEnv, BackendEnv } from '../worker-types';
 
-// Default user for development/demo environments
-// Override these with environment variables: DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, DEFAULT_ADMIN_NAME
+// Default user seeding is opt-in and intended only for local development.
 const getDefaultUser = (env: BackendEnv) => ({
   email: env.DEFAULT_ADMIN_EMAIL || 'admin@example.com',
   password: env.DEFAULT_ADMIN_PASSWORD || 'changeme',
   name: env.DEFAULT_ADMIN_NAME || 'Admin User',
   role: 'admin' as const,
 });
+
+const shouldSeedDefaultUser = (env: BackendEnv) => env.ENABLE_DEFAULT_ADMIN_SEED === 'true';
 
 const seedRuns = new Map<string, Promise<void>>();
 
@@ -59,10 +60,12 @@ export const ensureDefaultUser = (env: BackendEnv) => {
 };
 
 export const defaultUserSeedMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
-  try {
-    await ensureDefaultUser(c.env);
-  } catch (error) {
-    console.error('Failed to ensure default auth user', error);
+  if (shouldSeedDefaultUser(c.env)) {
+    try {
+      await ensureDefaultUser(c.env);
+    } catch (error) {
+      console.error('Failed to ensure default auth user', error);
+    }
   }
 
   await next();

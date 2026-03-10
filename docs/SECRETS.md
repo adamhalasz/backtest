@@ -13,7 +13,7 @@ Value: [Get from: https://dash.cloudflare.com/profile/api-tokens]
 
 ```
 Name: CLOUDFLARE_ACCOUNT_ID
-Value: [Get from: Cloudflare Dashboard → Account ID in sidebar]
+Value: [Set as a GitHub repository variable or secret]
 ```
 
 ### Database Credentials
@@ -64,7 +64,6 @@ Value: https://api.backtest.yourdomain.com
 After adding all secrets, they should appear in your secrets list (values are hidden):
 
 - ✅ CLOUDFLARE_API_TOKEN
-- ✅ CLOUDFLARE_ACCOUNT_ID
 - ✅ DATABASE_URL
 - ✅ CLICKHOUSE_URL
 - ✅ CLICKHOUSE_USERNAME
@@ -75,6 +74,14 @@ After adding all secrets, they should appear in your secrets list (values are hi
 
 Backend runtime secrets are required in GitHub only if the workflow should create or rotate Cloudflare Worker secrets.
 If the Worker secrets are already configured in Cloudflare, the backend deploy job can run without the database and ClickHouse secrets in GitHub.
+
+For a public repository, store deployment credentials in the GitHub `production` environment instead of repository-wide secrets whenever possible.
+
+Recommended GitHub setup:
+- Put `CLOUDFLARE_API_TOKEN` in the `production` environment secrets
+- Put `CLOUDFLARE_ACCOUNT_ID` in the `production` environment variables or secrets
+- Require reviewers for the `production` environment
+- Restrict deployments to the `main` branch only
 
 ## Optional: Pulumi Secrets
 

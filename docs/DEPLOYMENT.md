@@ -19,7 +19,7 @@ Configure the following secrets in your GitHub repository (Settings → Secrets 
 | Secret Name | Description | Example |
 |------------|-------------|---------|
 | `CLOUDFLARE_API_TOKEN` | Cloudflare API token with Workers/Pages permissions | `your-cloudflare-api-token` |
-| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID | `abc123def456` |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID stored as a GitHub variable or secret | `abc123def456` |
 | `DATABASE_URL` | Neon PostgreSQL connection string | `postgresql://user:pass@host/db` |
 | `BETTER_AUTH_SECRET` | Secret key for auth sessions (min 32 chars) | `your-random-secret-key-here` |
 | `INGESTION_ADMIN_SECRET` | Secret for ingestion admin endpoints | `your-ingestion-secret` |
@@ -41,9 +41,9 @@ Configure the following secrets in your GitHub repository (Settings → Secrets 
 
 2. **Account ID**:
    - Go to https://dash.cloudflare.com
-   - Select your domain
-   - Scroll down to "Account ID" on the right sidebar
-   - Copy the Account ID
+   - Select your account
+   - Copy the Account ID from the dashboard sidebar
+   - Store it as `CLOUDFLARE_ACCOUNT_ID` in GitHub repository variables or secrets
 
 ### Generate Secrets
 
@@ -71,6 +71,38 @@ You can manually trigger deployments from GitHub:
 2. Select "Deploy to Production" workflow
 3. Click "Run workflow"
 4. Select branch and run
+
+## GitHub Guardrails
+
+For a public repository, protect deployment through GitHub settings as well as workflow code.
+
+1. Create a GitHub environment named `production`.
+2. Move these values into the `production` environment:
+   - `CLOUDFLARE_API_TOKEN`
+   - `CLOUDFLARE_ACCOUNT_ID`
+   - `VITE_API_URL`
+   - Any backend runtime secrets you want CI to rotate
+3. In the `production` environment, enable:
+   - Required reviewers
+   - Prevent self-review
+   - Deployment branches restricted to `main`
+4. Enable branch protection on `main`:
+   - Require pull requests before merging
+   - Require approval from code owners
+   - Require status checks to pass
+   - Dismiss stale approvals when new commits are pushed
+   - Restrict who can push to `main`
+   - Disable force pushes and branch deletion
+5. Add a CODEOWNERS file in GitHub for at least these paths:
+   - `.github/workflows/`
+   - `infra/`
+   - `services/backend/wrangler.jsonc`
+   - `scripts/`
+6. Enable GitHub security features:
+   - Secret scanning
+   - Push protection
+   - Dependabot security updates
+   - Dependabot version updates
 
 ## Cloudflare Pages Setup
 

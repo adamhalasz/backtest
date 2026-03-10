@@ -115,7 +115,6 @@ UPDATE "user" SET role = 'admin' WHERE email = 'your-email@example.com';
 Go to: Settings → Secrets and variables → Actions
 
 - [ ] CLOUDFLARE_API_TOKEN
-- [ ] CLOUDFLARE_ACCOUNT_ID
 - [ ] DATABASE_URL
 - [ ] BETTER_AUTH_SECRET
 - [ ] INGESTION_ADMIN_SECRET

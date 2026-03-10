@@ -1,0 +1,10 @@
+# Default owner for the repository.
+* @adamhalasz
+
+# Deployment and infrastructure changes require explicit owner review.
+/.github/workflows/ @adamhalasz
+/infra/ @adamhalasz
+/scripts/ @adamhalasz
+/services/backend/wrangler.jsonc @adamhalasz
+/services/backend/src/auth/ @adamhalasz
+/services/backend/src/routes/admin/ @adamhalasz

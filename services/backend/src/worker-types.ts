@@ -22,6 +22,7 @@ export interface BackendEnv {
   FRONTEND_ORIGIN?: string;
   INGESTION_ADMIN_SECRET?: string;
   // Default admin user (development/demo only)
+  ENABLE_DEFAULT_ADMIN_SEED?: string;
   DEFAULT_ADMIN_EMAIL?: string;
   DEFAULT_ADMIN_PASSWORD?: string;
   DEFAULT_ADMIN_NAME?: string;

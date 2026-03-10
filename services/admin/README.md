@@ -11,7 +11,7 @@ Only users with the `admin` role can access this service.
 
 ### Setting Up an Admin User
 
-In development, a default admin user is auto-created (see backend `DEFAULT_ADMIN_EMAIL` env var).
+For local development, you can opt into a seeded admin user by setting `ENABLE_DEFAULT_ADMIN_SEED=true` in `services/backend/.dev.vars` and providing `DEFAULT_ADMIN_EMAIL` / `DEFAULT_ADMIN_PASSWORD` values.
 
 In production, grant admin role via SQL:
 ```sql
@@ -42,7 +42,7 @@ pnpm lint
 Create a `.env.local` file:
 
 ```env
-VITE_API_URL=http://localhost:8788
+VITE_API_URL=http://localhost:8787
 ```
 
 ## Features
