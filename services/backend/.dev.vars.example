@@ -1,0 +1,4 @@
+DATABASE_URL=postgresql://username:password@host:5432/database
+BETTER_AUTH_SECRET=replace-with-a-random-32-byte-secret
+BETTER_AUTH_URL=http://localhost:8787
+FRONTEND_ORIGIN=http://localhost:5173

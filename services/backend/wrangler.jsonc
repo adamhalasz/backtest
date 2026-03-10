@@ -1,0 +1,16 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "backtest-api",
+    "main": "src/index.ts",
+    "compatibility_date": "2026-03-10",
+    "compatibility_flags": [
+        "nodejs_compat"
+    ],
+    "observability": {
+        "enabled": true
+    },
+    "vars": {
+        "BETTER_AUTH_URL": "http://localhost:8787",
+        "FRONTEND_ORIGIN": "http://localhost:5173"
+    }
+}

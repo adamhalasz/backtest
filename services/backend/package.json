@@ -1,0 +1,26 @@
+{
+  "name": "@backtest/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "check": "pnpm typecheck"
+  },
+  "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.5.4",
+    "@neondatabase/serverless": "^1.0.2",
+    "better-auth": "^1.5.4",
+    "drizzle-orm": "^0.45.1",
+    "hono": "^4.12.6",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260303.0",
+    "drizzle-kit": "^0.31.9",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.71.0"
+  }
+}

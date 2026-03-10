@@ -1,0 +1,125 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Backend Service",
+            "type": "shell",
+            "command": "cd services/backend && pnpm dev",
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "custom",
+                "pattern": {
+                    "regexp": "^(.*)$",
+                    "file": 1
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".",
+                    "endsPattern": "Ready on http://localhost:8787"
+                }
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "services"
+            }
+        },
+        {
+            "label": "Start Frontend Service",
+            "type": "shell",
+            "command": "cd services/frontend && pnpm dev",
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "custom",
+                "pattern": {
+                    "regexp": "^(.*)$",
+                    "file": 1
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".",
+                    "endsPattern": "Local:\\s+http://localhost:"
+                }
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "services"
+            }
+        },
+        {
+            "label": "Start All Services",
+            "dependsOn": [
+                "Start Backend Service",
+                "Start Frontend Service"
+            ],
+            "dependsOrder": "parallel",
+            "runOptions": {
+                "reevaluateOnRerun": true
+            }
+        },
+        {
+            "label": "Check Backend Service",
+            "type": "shell",
+            "command": "cd services/backend && pnpm check",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "group": "checks"
+            },
+            "group": "test"
+        },
+        {
+            "label": "Check Frontend Service",
+            "type": "shell",
+            "command": "cd services/frontend && pnpm lint && pnpm typecheck",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "group": "checks"
+            },
+            "group": "test"
+        },
+        {
+            "label": "Check All Services",
+            "dependsOn": [
+                "Check Backend Service",
+                "Check Frontend Service"
+            ],
+            "dependsOrder": "sequence",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Test Frontend Service",
+            "type": "shell",
+            "command": "node -e \"const { execSync } = require('node:child_process'); const pkg = require('./services/frontend/package.json'); if (pkg.scripts && pkg.scripts.test) { execSync('cd services/frontend && pnpm test', { stdio: 'inherit' }); } else { console.log('Skipping frontend tests: no test script defined.'); }\"",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "group": "tests"
+            }
+        },
+        {
+            "label": "Test Backend Service",
+            "type": "shell",
+            "command": "node -e \"const { execSync } = require('node:child_process'); const pkg = require('./services/backend/package.json'); if (pkg.scripts && pkg.scripts.test) { execSync('cd services/backend && pnpm test', { stdio: 'inherit' }); } else { console.log('Skipping backend tests: no test script defined.'); }\"",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "group": "tests"
+            }
+        },
+        {
+            "label": "Test All Services",
+            "dependsOn": [
+                "Test Frontend Service",
+                "Test Backend Service"
+            ],
+            "dependsOrder": "sequence",
+            "group": "test"
+        }
+    ]
+}
