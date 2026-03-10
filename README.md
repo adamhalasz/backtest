@@ -128,7 +128,7 @@ Whether you're a quantitative trader developing sophisticated strategies or a de
 
    # Terminal 3 - Admin (optional)
    cd services/admin
-   pnpm dev  # http://localhost:5176
+   pnpm dev  # http://localhost:5174
    ```
 
 6. **Create your first admin user**
