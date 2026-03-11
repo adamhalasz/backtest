@@ -26,6 +26,7 @@
     "deploy:docs": "bash scripts/deploy-docs.sh",
     "deploy:landing": "bash scripts/deploy-landing.sh",
     "deploy:all": "bash scripts/deploy-backend.sh && bash scripts/deploy-frontend.sh && bash scripts/deploy-admin.sh && bash scripts/deploy-docs.sh && bash scripts/deploy-landing.sh",
+    "migrate:neon": "bash scripts/migrate-neon.sh",
     "infra:preview": "pnpm --filter @quantago/infra preview",
     "infra:up": "pnpm --filter @quantago/infra up",
     "infra:destroy": "pnpm --filter @quantago/infra destroy"

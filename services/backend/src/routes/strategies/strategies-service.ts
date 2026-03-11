@@ -7,11 +7,14 @@ import {
   findPersistedStrategyBySlug,
   insertStrategyDefinition,
   insertStrategyVersion,
+  isStrategyRegistryUnavailableError,
   listPersistedStrategies,
   listStrategyVersions,
   setCurrentStrategyVersion,
 } from './strategies-repository';
 import type { CreateStrategyInput, CreateStrategyVersionInput, StrategyVersionRow } from './strategies-types';
+
+const STRATEGY_REGISTRY_UNAVAILABLE_MESSAGE = 'Strategy registry is unavailable until database migration 0006_strategy_registry.sql is applied.';
 
 const parseJsonField = <T>(value: T | string): T => {
   return typeof value === 'string' ? JSON.parse(value) as T : value;
@@ -32,7 +35,16 @@ export const listStrategiesCatalog = async (env: BackendEnv, userId: string) => 
     source: 'builtin' as const,
   }));
 
-  const persistedStrategies = await listPersistedStrategies(env, userId);
+  let persistedStrategies = [];
+
+  try {
+    persistedStrategies = await listPersistedStrategies(env, userId);
+  } catch (error) {
+    if (!isStrategyRegistryUnavailableError(error)) {
+      throw error;
+    }
+  }
+
   const persistedCatalog = persistedStrategies.map((strategy) => {
     const runtime = parseJsonField<Record<string, unknown>>(strategy.current_runtime_config);
     return {
@@ -69,55 +81,63 @@ export const createStrategyDefinitionWithInitialVersion = async (
   userId: string,
   payload: CreateStrategyInput,
 ) => {
-  const existing = await findPersistedStrategyBySlug(env, payload.strategy.slug, userId);
-  if (existing) {
-    throw new AppError('Strategy slug already exists', 409);
-  }
+  try {
+    const existing = await findPersistedStrategyBySlug(env, payload.strategy.slug, userId);
+    if (existing) {
+      throw new AppError('Strategy slug already exists', 409);
+    }
 
-  const definition = await insertStrategyDefinition(env, {
-    userId,
-    slug: payload.strategy.slug,
-    name: payload.strategy.name,
-    description: payload.strategy.description,
-    runtimeType: payload.strategy.runtime_type,
-    language: payload.strategy.language,
-    defaultFrequency: payload.strategy.default_frequency,
-    minCandles: payload.strategy.min_candles,
-    lookbackCandles: payload.strategy.lookback_candles,
-    defaultConfig: payload.strategy.default_config,
-    parameterSchema: payload.strategy.parameter_schema,
-    isPublic: payload.strategy.is_public,
-  });
+    const definition = await insertStrategyDefinition(env, {
+      userId,
+      slug: payload.strategy.slug,
+      name: payload.strategy.name,
+      description: payload.strategy.description,
+      runtimeType: payload.strategy.runtime_type,
+      language: payload.strategy.language,
+      defaultFrequency: payload.strategy.default_frequency,
+      minCandles: payload.strategy.min_candles,
+      lookbackCandles: payload.strategy.lookback_candles,
+      defaultConfig: payload.strategy.default_config,
+      parameterSchema: payload.strategy.parameter_schema,
+      isPublic: payload.strategy.is_public,
+    });
 
-  const artifact = payload.strategy.initial_version.artifact;
-  const artifactKey = artifact
-    ? await storeStrategyArtifact({
-      env,
+    const artifact = payload.strategy.initial_version.artifact;
+    const artifactKey = artifact
+      ? await storeStrategyArtifact({
+        env,
+        strategyId: definition.id,
+        version: payload.strategy.initial_version.version,
+        fileName: artifact.file_name,
+        contentBase64: artifact.content_base64,
+        contentType: artifact.content_type,
+      })
+      : undefined;
+
+    const version = await insertStrategyVersion(env, {
       strategyId: definition.id,
       version: payload.strategy.initial_version.version,
-      fileName: artifact.file_name,
-      contentBase64: artifact.content_base64,
-      contentType: artifact.content_type,
-    })
-    : undefined;
+      runtimeConfig: {
+        ...payload.strategy.initial_version.runtime_config,
+        ...(artifactKey ? { artifactKey } : {}),
+      },
+      artifactKey,
+      artifactContentType: artifact?.content_type,
+    });
 
-  const version = await insertStrategyVersion(env, {
-    strategyId: definition.id,
-    version: payload.strategy.initial_version.version,
-    runtimeConfig: {
-      ...payload.strategy.initial_version.runtime_config,
-      ...(artifactKey ? { artifactKey } : {}),
-    },
-    artifactKey,
-    artifactContentType: artifact?.content_type,
-  });
+    await setCurrentStrategyVersion(env, { strategyId: definition.id, versionId: version.id });
 
-  await setCurrentStrategyVersion(env, { strategyId: definition.id, versionId: version.id });
+    return {
+      definition,
+      version,
+    };
+  } catch (error) {
+    if (isStrategyRegistryUnavailableError(error)) {
+      throw new AppError(STRATEGY_REGISTRY_UNAVAILABLE_MESSAGE, 503);
+    }
 
-  return {
-    definition,
-    version,
-  };
+    throw error;
+  }
 };
 
 export const createStrategyVersionForDefinition = async (
@@ -126,43 +146,51 @@ export const createStrategyVersionForDefinition = async (
   slug: string,
   payload: CreateStrategyVersionInput,
 ) => {
-  const strategy = await findPersistedStrategyBySlug(env, slug, userId);
-  if (!strategy) {
-    throw new AppError('Strategy not found', 404);
-  }
+  try {
+    const strategy = await findPersistedStrategyBySlug(env, slug, userId);
+    if (!strategy) {
+      throw new AppError('Strategy not found', 404);
+    }
 
-  if (strategy.user_id !== userId) {
-    throw new AppError('You do not have permission to update this strategy', 403);
-  }
+    if (strategy.user_id !== userId) {
+      throw new AppError('You do not have permission to update this strategy', 403);
+    }
 
-  const artifact = payload.version.artifact;
-  const artifactKey = artifact
-    ? await storeStrategyArtifact({
-      env,
+    const artifact = payload.version.artifact;
+    const artifactKey = artifact
+      ? await storeStrategyArtifact({
+        env,
+        strategyId: strategy.id,
+        version: payload.version.version,
+        fileName: artifact.file_name,
+        contentBase64: artifact.content_base64,
+        contentType: artifact.content_type,
+      })
+      : undefined;
+
+    const version = await insertStrategyVersion(env, {
       strategyId: strategy.id,
       version: payload.version.version,
-      fileName: artifact.file_name,
-      contentBase64: artifact.content_base64,
-      contentType: artifact.content_type,
-    })
-    : undefined;
+      runtimeConfig: {
+        ...payload.version.runtime_config,
+        ...(artifactKey ? { artifactKey } : {}),
+      },
+      artifactKey,
+      artifactContentType: artifact?.content_type,
+    });
 
-  const version = await insertStrategyVersion(env, {
-    strategyId: strategy.id,
-    version: payload.version.version,
-    runtimeConfig: {
-      ...payload.version.runtime_config,
-      ...(artifactKey ? { artifactKey } : {}),
-    },
-    artifactKey,
-    artifactContentType: artifact?.content_type,
-  });
+    if (payload.version.make_current) {
+      await setCurrentStrategyVersion(env, { strategyId: strategy.id, versionId: version.id });
+    }
 
-  if (payload.version.make_current) {
-    await setCurrentStrategyVersion(env, { strategyId: strategy.id, versionId: version.id });
+    return version;
+  } catch (error) {
+    if (isStrategyRegistryUnavailableError(error)) {
+      throw new AppError(STRATEGY_REGISTRY_UNAVAILABLE_MESSAGE, 503);
+    }
+
+    throw error;
   }
-
-  return version;
 };
 
 export const getStrategyVersions = async (
@@ -170,10 +198,18 @@ export const getStrategyVersions = async (
   userId: string,
   slug: string,
 ): Promise<StrategyVersionRow[]> => {
-  const strategy = await findPersistedStrategyBySlug(env, slug, userId);
-  if (!strategy) {
-    throw new AppError('Strategy not found', 404);
-  }
+  try {
+    const strategy = await findPersistedStrategyBySlug(env, slug, userId);
+    if (!strategy) {
+      throw new AppError('Strategy not found', 404);
+    }
 
-  return listStrategyVersions(env, strategy.id);
+    return listStrategyVersions(env, strategy.id);
+  } catch (error) {
+    if (isStrategyRegistryUnavailableError(error)) {
+      throw new AppError(STRATEGY_REGISTRY_UNAVAILABLE_MESSAGE, 503);
+    }
+
+    throw error;
+  }
 };

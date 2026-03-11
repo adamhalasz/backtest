@@ -70,11 +70,6 @@ const config: Config = {
           label: 'Guide',
         },
         {
-          href: 'https://app.quantago.co',
-          label: 'App',
-          position: 'right',
-        },
-        {
           href: 'https://github.com/adamhalasz/backtest',
           label: 'GitHub',
           position: 'right',
@@ -107,14 +102,6 @@ const config: Config = {
             {
               label: 'Landing',
               href: 'https://quantago.co',
-            },
-            {
-              label: 'App',
-              href: 'https://app.quantago.co',
-            },
-            {
-              label: 'Admin',
-              href: 'https://admin.quantago.co',
             },
             {
               label: 'API',

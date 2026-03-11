@@ -1,6 +1,9 @@
 import { BUILT_IN_STRATEGIES } from '../../../../../strategies';
 import { COMMON_PARAMETER_SCHEMA } from '../../../../../strategies/helpers';
-import { findPersistedStrategyVersionForExecution } from '../../routes/strategies/strategies-repository';
+import {
+  findPersistedStrategyVersionForExecution,
+  isStrategyRegistryUnavailableError,
+} from '../../routes/strategies/strategies-repository';
 import type { BackendEnv } from '../../worker-types';
 import { EntryFrequency } from './types';
 import type { StrategyDefinition, StrategyParameterSchema } from './types';
@@ -90,12 +93,23 @@ export const resolveStrategyDefinitionForExecution = async (input: {
   }
 
   const requestedVersion = typeof input.parameters.strategyVersion === 'string' ? input.parameters.strategyVersion : undefined;
-  const persisted = await findPersistedStrategyVersionForExecution(
-    input.env,
-    input.strategyName,
-    input.userId,
-    requestedVersion,
-  );
+  let persisted;
+
+  try {
+    persisted = await findPersistedStrategyVersionForExecution(
+      input.env,
+      input.strategyName,
+      input.userId,
+      requestedVersion,
+    );
+  } catch (error) {
+    if (isStrategyRegistryUnavailableError(error)) {
+      return undefined;
+    }
+
+    throw error;
+  }
+
   if (!persisted) {
     return undefined;
   }

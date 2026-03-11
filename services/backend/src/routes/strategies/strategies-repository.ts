@@ -2,6 +2,25 @@ import { getSql } from '../../db/client';
 import type { BackendEnv } from '../../worker-types';
 import type { StrategyCatalogRow, StrategyDefinitionRow, StrategyVersionRow } from './strategies-types';
 
+const STRATEGY_REGISTRY_RELATIONS = ['strategy_definitions', 'strategy_versions'] as const;
+
+export const isStrategyRegistryUnavailableError = (error: unknown) => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const postgresCode = 'code' in error ? String(error.code) : '';
+  const message = error.message.toLowerCase();
+
+  if (postgresCode === '42P01') {
+    return true;
+  }
+
+  return STRATEGY_REGISTRY_RELATIONS.some((relation) =>
+    message.includes(`relation "${relation}" does not exist`),
+  );
+};
+
 export const listPersistedStrategies = async (env: BackendEnv, userId: string): Promise<StrategyCatalogRow[]> => {
   const sql = getSql(env);
   const rows = await sql`
