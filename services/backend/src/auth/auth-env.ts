@@ -32,6 +32,14 @@ const getSiteKey = (origin: string) => {
 	}
 };
 
+const isSameSiteOrigin = (origin: string, candidate: string) => {
+	if (!origin || !candidate) {
+		return false;
+	}
+
+	return getSiteKey(origin) === getSiteKey(candidate);
+};
+
 const getAdminOrigin = (env: BackendEnv) => env.ADMIN_ORIGIN ? normalizeOrigin(env.ADMIN_ORIGIN) : '';
 
 const getRequestOrigin = (request?: Request) => {
@@ -81,8 +89,13 @@ export const shouldUseCrossSiteAuthCookies = (env: BackendEnv, request?: Request
 export const isAllowedCorsOrigin = (origin: string, env: BackendEnv, request?: Request) => {
 	const normalizedOrigin = normalizeOrigin(origin);
 	const trustedOrigins = getTrustedOrigins(env, request);
+	const sameSiteCandidates = [getFrontendOrigin(env), getAdminOrigin(env), getAuthBaseUrl(env, request)].filter(Boolean);
 
 	if (trustedOrigins.includes(normalizedOrigin)) {
+		return true;
+	}
+
+	if (sameSiteCandidates.some((candidate) => isSameSiteOrigin(normalizedOrigin, candidate))) {
 		return true;
 	}
 

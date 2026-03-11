@@ -6,7 +6,7 @@ import { useAuthSession } from './auth-hooks';
 
 export function AuthPage() {
 	const [, navigate] = useLocation();
-	const { session, isPending } = useAuthSession();
+	const { session, isPending, hasTimedOut } = useAuthSession();
 	const [mode, setMode] = React.useState<'signin' | 'signup'>('signin');
 	const [loading, setLoading] = React.useState(false);
 	const [error, setError] = React.useState<string | null>(null);
@@ -70,6 +70,12 @@ export function AuthPage() {
 
 			{error ? (
 				<div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+			) : null}
+
+			{hasTimedOut ? (
+				<div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+					We could not restore your existing session automatically. You can still sign in normally.
+				</div>
 			) : null}
 
 			<form className="space-y-4" onSubmit={handleSubmit}>

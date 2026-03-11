@@ -23,7 +23,12 @@ jobs:
     name: Detect Changed Areas
     runs-on: ubuntu-latest
     outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      admin: ${{ steps.filter.outputs.admin }}
+      landing: ${{ steps.filter.outputs.landing }}
       docs: ${{ steps.filter.outputs.docs }}
+      any: ${{ steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true' || steps.filter.outputs.admin == 'true' || steps.filter.outputs.landing == 'true' || steps.filter.outputs.docs == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,6 +40,32 @@ jobs:
         uses: dorny/paths-filter@v3
         with:
           filters: |
+            backend:
+              - 'services/backend/**'
+              - 'strategies/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'scripts/deploy-backend.sh'
+            frontend:
+              - 'services/frontend/**'
+              - 'shared/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'scripts/deploy-frontend.sh'
+            admin:
+              - 'services/admin/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'scripts/deploy-admin.sh'
+            landing:
+              - 'services/landing/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'scripts/deploy-landing.sh'
             docs:
               - 'docs/**'
               - 'services/docs/**'
@@ -43,9 +74,6 @@ jobs:
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
               - 'scripts/deploy-docs.sh'
-              - 'setup.sh'
-              - '.github/workflows/deploy.yml'
-              - '.github/workflows/pr-check.yml'
 
   # ============================================================================
   # Tests and Checks
@@ -54,6 +82,8 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -71,49 +101,61 @@ jobs:
         run: pnpm install --frozen-lockfile
       
       - name: Type check backend
+        if: needs.detect-changes.outputs.backend == 'true'
         run: cd services/backend && pnpm typecheck
       
       - name: Type check frontend
+        if: needs.detect-changes.outputs.frontend == 'true'
         run: cd services/frontend && pnpm typecheck
       
       - name: Type check admin
+        if: needs.detect-changes.outputs.admin == 'true'
         run: cd services/admin && pnpm typecheck
 
       - name: Type check landing
+        if: needs.detect-changes.outputs.landing == 'true'
         run: cd services/landing && pnpm typecheck
 
       - name: Type check docs
+        if: needs.detect-changes.outputs.docs == 'true'
         run: cd services/docs && pnpm typecheck
       
       - name: Lint backend
+        if: needs.detect-changes.outputs.backend == 'true'
         run: cd services/backend && pnpm lint
       
       - name: Lint frontend
+        if: needs.detect-changes.outputs.frontend == 'true'
         run: cd services/frontend && pnpm lint
       
       - name: Lint admin
+        if: needs.detect-changes.outputs.admin == 'true'
         run: cd services/admin && pnpm lint
 
       - name: Lint landing
+        if: needs.detect-changes.outputs.landing == 'true'
         run: cd services/landing && pnpm lint
 
       - name: Build docs
+        if: needs.detect-changes.outputs.docs == 'true'
         run: cd services/docs && pnpm build
       
       - name: Run backend tests
+        if: needs.detect-changes.outputs.backend == 'true'
         run: |
           if [ -f "services/backend/package.json" ] && grep -q '"test"' services/backend/package.json; then
             pnpm --dir services/backend test
           fi
 
       - name: Run frontend tests with coverage
+        if: needs.detect-changes.outputs.frontend == 'true'
         run: |
           if [ -f "services/frontend/package.json" ] && grep -q '"test"' services/frontend/package.json; then
             pnpm --dir services/frontend test:coverage
           fi
 
       - name: Upload coverage reports to Codecov
-        if: ${{ env.CODECOV_TOKEN != '' }}
+        if: ${{ env.CODECOV_TOKEN != '' && needs.detect-changes.outputs.frontend == 'true' }}
         uses: codecov/codecov-action@v5
         with:
           token: ${{ env.CODECOV_TOKEN }}
@@ -127,7 +169,10 @@ jobs:
   deploy-backend:
     name: Deploy Backend Worker
     runs-on: ubuntu-latest
-    needs: test
+    needs:
+      - detect-changes
+      - test
+    if: needs.detect-changes.outputs.backend == 'true'
     environment: production
     permissions:
       contents: read
@@ -276,7 +321,10 @@ jobs:
   deploy-frontend:
     name: Deploy Frontend
     runs-on: ubuntu-latest
-    needs: test
+    needs:
+      - detect-changes
+      - test
+    if: needs.detect-changes.outputs.frontend == 'true'
     environment: production
     permissions:
       contents: read
@@ -342,7 +390,10 @@ jobs:
   deploy-admin:
     name: Deploy Admin
     runs-on: ubuntu-latest
-    needs: test
+    needs:
+      - detect-changes
+      - test
+    if: needs.detect-changes.outputs.admin == 'true'
     environment: production
     permissions:
       contents: read
@@ -408,7 +459,10 @@ jobs:
   deploy-landing:
     name: Deploy Landing
     runs-on: ubuntu-latest
-    needs: test
+    needs:
+      - detect-changes
+      - test
+    if: needs.detect-changes.outputs.landing == 'true'
     environment: production
     permissions:
       contents: read

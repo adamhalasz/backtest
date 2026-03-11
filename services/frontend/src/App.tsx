@@ -4,13 +4,15 @@ import { MainNav } from '@/components/layout/main-nav';
 import { Menu, User } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { signOut, useSession } from '@/lib/auth-client';
+import { signOut, useSafeSession } from '@/lib/auth-client';
 import { AuthPage } from '@/routes/auth/AuthPage';
 import { AppRouter } from './router';
 
+const docsUrl = 'https://docs.quantago.co';
+
 function App() {
   const [location, navigate] = useLocation();
-  const { data: session, isPending } = useSession();
+  const { data: session, isPending, hasTimedOut } = useSafeSession();
   const isAuthenticated = Boolean(session?.user);
   const isAuthRoute = location.startsWith('/auth');
 
@@ -54,6 +56,29 @@ function App() {
     );
   }
 
+  if (hasTimedOut && !isAuthenticated && !isAuthRoute) {
+    return (
+      <div className="min-h-screen bg-background px-6 py-10">
+        <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl items-center justify-center">
+          <div className="w-full max-w-md rounded-3xl border border-border bg-card px-8 py-12 text-center shadow-sm">
+            <img src="/logo.png" alt="Quantago" className="mx-auto h-16 w-16" />
+            <p className="text-sm font-medium uppercase tracking-[0.3em] text-muted-foreground">Quantago</p>
+            <h1 className="mt-4 text-2xl font-semibold text-foreground">Session restore timed out</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              The app could not verify your saved session. Continue to sign in or reload and try again.
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Button onClick={() => navigate('/auth')}>Go to sign in</Button>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background px-6 py-10">
@@ -85,6 +110,9 @@ function App() {
           <img src="/logo.png" alt="Quantago" className="h-9 w-9 shrink-0" />
           <span className="text-sm font-semibold uppercase tracking-[0.22em] text-foreground">Quantago</span>
         </div>
+        <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+          <a href={docsUrl} rel="noreferrer" target="_blank">Docs</a>
+        </Button>
         <div className="flex-1" />
         <Button
           onClick={() => {
@@ -117,6 +145,9 @@ function App() {
             <MainNav />
           </div>
           <div className="border-t p-4">
+            <Button asChild variant="ghost" size="sm" className="mb-2 w-full justify-start">
+              <a href={docsUrl} rel="noreferrer" target="_blank">Docs</a>
+            </Button>
             <Button
               variant="ghost"
               size="sm"
