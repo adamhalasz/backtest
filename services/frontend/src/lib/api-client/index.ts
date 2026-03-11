@@ -1,8 +1,9 @@
 import type { MarketAssetClass, MarketDataProviderId } from '@/lib/market';
 import { normalizeStrategyCatalogItem, type StrategyCatalogItem, type StrategyCatalogRecord } from '@/lib/strategy-catalog';
 import type { Bot, StoredBacktest, Trade } from '@/lib/types';
+import { getApiBaseUrl } from '@/lib/runtime-config';
 
-const configuredBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const configuredBaseUrl = getApiBaseUrl();
 
 const buildUrl = (path: string) => {
   if (!configuredBaseUrl) {
